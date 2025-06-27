@@ -1,0 +1,5 @@
+add_subdirectory(${REFII_TOOLS_ROOT}/bc_diff)
+add_subdirectory(${REFII_TOOLS_ROOT}/file_to_c)
+add_subdirectory(${REFII_TOOLS_ROOT}/fshasher)
+add_subdirectory(${REFII_TOOLS_ROOT}/XenonRecomp)
+add_subdirectory(${REFII_TOOLS_ROOT}/XenosRecomp)
