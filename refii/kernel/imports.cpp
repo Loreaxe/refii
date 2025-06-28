@@ -300,7 +300,7 @@ GUEST_FUNCTION_HOOK(__imp__NetDll_XNetQosRelease, refii::kernel::NetDll_XNetQosR
 
 
 // stubs
-GUEST_FUNCTION_STUB(sub_82CC6BC0); // HeapCreate
+GUEST_FUNCTION_STUB(sub_82CC5D38); // HeapCreate
 GUEST_FUNCTION_STUB(sub_82CC6C40); // HeapDestroy
 GUEST_FUNCTION_STUB(__imp__vsprintf);
 GUEST_FUNCTION_STUB(__imp___vsnprintf);
