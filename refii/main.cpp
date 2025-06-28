@@ -217,20 +217,20 @@ int main(int argc, char *argv[])
     refii::kernel::XamContentCreateEx(0, "cache", &cacheContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
 
-    XAudioInitializeSystem();
+    //XAudioInitializeSystem();
 
     uint32_t entry = LdrLoadModule(modulePath);
 
     //if (!runInstallerWizard)
     //{
-        if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
-        {
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
-            std::_Exit(1);
-        }
+        //if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
+        //{
+        //    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
+        //    std::_Exit(1);
+        //}
     //}
 
-   Video::StartPipelinePrecompilation();
+   // Video::StartPipelinePrecompilation();
 
     GuestThread::Start({ entry, 0, 0 });
 
