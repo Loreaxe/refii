@@ -54,6 +54,8 @@ using Microsoft::WRL::ComPtr;
 #include "framework.h"
 #include <kernel/obj/mutex.h>
 
+#include <os/logger.h>
+
 #ifndef _WIN32
 #include <sys/mman.h>
 #endif
