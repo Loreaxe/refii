@@ -1270,6 +1270,10 @@ uint32_t refii::kernel::MmAllocatePhysicalMemoryEx(uint32_t flags, uint32_t size
     return g_memory.MapVirtual(g_userHeap.AllocPhysical(size, alignment));
 }
 
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::MmSetAddressProtect, 
+    (uint32_t guestAddress,uint32_t size,uint32_t protect), 0)
+
+
 uint32_t refii::kernel::MmQueryAddressProtect(uint32_t guestAddress)
 {
     return PAGE_READWRITE;
@@ -1307,3 +1311,22 @@ void* MmGetHostAddress(uint32_t ptr)
 {
     return refii::kernel::g_memory.Translate(ptr);
 }
+
+// Non-critical
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XeCryptShaInit, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XeCryptShaUpdate, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XeCryptShaFinal, ())
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XexLoadImage, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XexUnloadImage, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::NtQueueApcThread, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::NtProtectVirtualMemory, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamShowMarketplaceUI, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamUserCheckPrivilege, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamUserAreUsersFriends, (), 0) // :(
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamReadTileToTexture, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamShowGamerCardUIForXUID, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamContentGetLicenseMask, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamParseGamerTileKey, (), 0)
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::NtCancelTimer, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::NtCreateTimer, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::NtSetTimerEx, ())

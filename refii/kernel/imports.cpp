@@ -243,6 +243,60 @@ GUEST_FUNCTION_HOOK(sub_82CB0B30, memmove);
 GUEST_FUNCTION_HOOK(sub_826BF770, memcpy);
 GUEST_FUNCTION_HOOK(sub_826BFCF0, memset);
 
+GUEST_FUNCTION_HOOK(__imp__MmSetAddressProtect, refii::kernel::MmSetAddressProtect);
+GUEST_FUNCTION_HOOK(__imp__NtProtectVirtualMemory, refii::kernel::NtProtectVirtualMemory);
+GUEST_FUNCTION_HOOK(__imp__NtQueueApcThread, refii::kernel::NtQueueApcThread);
+GUEST_FUNCTION_HOOK(__imp__NtCancelTimer, refii::kernel::NtCancelTimer);
+GUEST_FUNCTION_HOOK(__imp__NtCreateTimer, refii::kernel::NtCreateTimer);
+GUEST_FUNCTION_HOOK(__imp__NtSetTimerEx, refii::kernel::NtSetTimerEx);
+GUEST_FUNCTION_HOOK(__imp__XamContentGetLicenseMask, refii::kernel::XamContentGetLicenseMask);
+GUEST_FUNCTION_HOOK(__imp__XamGetOverlappedResult, refii::kernel::XamGetOverlappedResult);
+GUEST_FUNCTION_HOOK(__imp__XamGetPrivateEnumStructureFromHandle, refii::kernel::XamGetPrivateEnumStructureFromHandle);
+GUEST_FUNCTION_HOOK(__imp__XamParseGamerTileKey, refii::kernel::XamParseGamerTileKey);
+GUEST_FUNCTION_HOOK(__imp__XamReadTileToTexture, refii::kernel::XamReadTileToTexture);
+GUEST_FUNCTION_HOOK(__imp__XamShowAchievementsUI, refii::kernel::XamShowAchievementsUI);
+GUEST_FUNCTION_HOOK(__imp__XamShowGamerCardUIForXUID, refii::kernel::XamShowGamerCardUIForXUID);
+GUEST_FUNCTION_HOOK(__imp__XamShowKeyboardUI, refii::kernel::XamShowKeyboardUI);
+GUEST_FUNCTION_HOOK(__imp__XamShowMarketplaceUI, refii::kernel::XamShowMarketplaceUI);
+GUEST_FUNCTION_HOOK(__imp__XamUserAreUsersFriends, refii::kernel::XamUserAreUsersFriends);
+GUEST_FUNCTION_HOOK(__imp__XamUserCheckPrivilege, refii::kernel::XamUserCheckPrivilege);
+GUEST_FUNCTION_HOOK(__imp__XeCryptShaInit, refii::kernel::XeCryptShaInit);
+GUEST_FUNCTION_HOOK(__imp__XeCryptShaUpdate, refii::kernel::XeCryptShaUpdate);
+GUEST_FUNCTION_HOOK(__imp__XeCryptShaFinal, refii::kernel::XeCryptShaFinal);
+GUEST_FUNCTION_HOOK(__imp__XexLoadImage, refii::kernel::XexLoadImage);
+GUEST_FUNCTION_HOOK(__imp__XexUnloadImage, refii::kernel::XexUnloadImage);
+GUEST_FUNCTION_HOOK(__imp__XMsgCancelIORequest, refii::kernel::XMsgCancelIORequest);
+GUEST_FUNCTION_HOOK(__imp__XMsgCompleteIORequest, refii::kernel::XMsgCompleteIORequest);
+GUEST_FUNCTION_HOOK(__imp__XamCreateEnumeratorHandle, refii::kernel::XamContentCreateEnumerator);
+GUEST_FUNCTION_HOOK(__imp__XamSessionRefObjByHandle, refii::kernel::XamSessionRefObjByHandle);
+GUEST_FUNCTION_HOOK(__imp__XamSessionCreateHandle, refii::kernel::XamSessionCreateHandle);
+GUEST_FUNCTION_HOOK(__imp__XamUserGetMembershipTierFromXUID, refii::kernel::XamUserGetMembershipTierFromXUID);
+GUEST_FUNCTION_HOOK(__imp__XamUserGetOnlineCountryFromXUID, refii::kernel::XamUserGetOnlineCountryFromXUID);
+GUEST_FUNCTION_HOOK(__imp__XamVoiceClose, refii::kernel::XamVoiceClose);
+GUEST_FUNCTION_HOOK(__imp__XamVoiceCreate, refii::kernel::XamVoiceCreate);
+GUEST_FUNCTION_HOOK(__imp__XamVoiceHeadsetPresent, refii::kernel::XamVoiceHeadsetPresent);
+GUEST_FUNCTION_HOOK(__imp__XamVoiceSubmitPacket, refii::kernel::XamVoiceSubmitPacket);
+GUEST_FUNCTION_HOOK(__imp__NetDll_ioctlsocket, refii::kernel::NetDll_ioctlsocket);
+GUEST_FUNCTION_HOOK(__imp__NetDll_recvfrom, refii::kernel::NetDll_recvfrom);
+GUEST_FUNCTION_HOOK(__imp__NetDll_sendto, refii::kernel::NetDll_sendto);
+GUEST_FUNCTION_HOOK(__imp__NetDll_WSAGetLastError, refii::kernel::NetDll_WSAGetLastError);
+GUEST_FUNCTION_HOOK(__imp__NetDll_WSAGetOverlappedResult, refii::kernel::NetDll_WSAGetOverlappedResult);
+GUEST_FUNCTION_HOOK(__imp__NetDll_WSARecvFrom, refii::kernel::NetDll_WSARecvFrom);
+GUEST_FUNCTION_HOOK(__imp__NetDll_WSASendTo, refii::kernel::NetDll_WSASendTo);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetCleanup, refii::kernel::NetDll_XNetCleanup);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetConnect, refii::kernel::NetDll_XNetConnect);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetGetConnectStatus, refii::kernel::NetDll_XNetGetConnectStatus);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetInAddrToXnAddr, refii::kernel::NetDll_XNetInAddrToXnAddr);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetRandom, refii::kernel::NetDll_XNetRandom);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetRegisterKey, refii::kernel::NetDll_XNetRegisterKey);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetUnregisterInAddr, refii::kernel::NetDll_XNetUnregisterInAddr);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetUnregisterKey, refii::kernel::NetDll_XNetUnregisterKey);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetXnAddrToInAddr, refii::kernel::NetDll_XNetXnAddrToInAddr);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetXnAddrToMachineId, refii::kernel::NetDll_XNetXnAddrToMachineId);
+GUEST_FUNCTION_HOOK(__imp__XNetLogonGetTitleID, refii::kernel::XNetLogonGetTitleID);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetQosListen, refii::kernel::NetDll_XNetQosListen);
+GUEST_FUNCTION_HOOK(__imp__NetDll_XNetQosRelease, refii::kernel::NetDll_XNetQosRelease);
+
 
 
 // stubs
@@ -370,3 +424,5 @@ GUEST_FUNCTION_STUB(__imp__swprintf);
 //GUEST_FUNCTION_STUB(GUEST__D3DXFilterTexture); // D3DXFilterTexture
 //GUEST_FUNCTION_STUB(GUEST__D3DDevice_Release); // D3DDevice_Release
 //GUEST_FUNCTION_STUB(sub_82466ED8);
+
+
