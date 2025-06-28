@@ -240,6 +240,10 @@ namespace kernel {
     
     void NtDuplicateObject();
 
+    void NtCancelTimer();
+    void NtCreateTimer();
+    void NtSetTimerEx();
+
     static uint32_t& TlsGetValueRef(size_t index);
     uint32_t KeTlsGetValue(uint32_t dwTlsIndex);
     uint32_t KeTlsSetValue(uint32_t dwTlsIndex, uint32_t lpTlsValue);
@@ -278,7 +282,7 @@ namespace kernel {
     uint32_t NtAllocateVirtualMemory(uint32_t processHandle, be<uint32_t>* baseAddress, uint32_t zeroBits, be<uint32_t>* regionSize, uint32_t allocationType, uint32_t protect);
     uint32_t NtFreeVirtualMemory(uint32_t processHandle, be<uint32_t>* baseAddress, be<uint32_t>* regionSize, uint32_t freeType);
     void NtQueryVirtualMemory();
-
+    uint32_t NtProtectVirtualMemory();
     uint32_t RtlAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t size);
     uint32_t RtlReAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer, uint32_t size);
     uint32_t RtlFreeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer);
@@ -300,6 +304,12 @@ namespace kernel {
         uint32_t maxAddress,
         uint32_t alignment
     );
+    uint32_t MmSetAddressProtect
+    (
+        uint32_t guestAddress,
+        uint32_t size,
+        uint32_t protect
+    );
 
     uint32_t MmQueryAddressProtect(uint32_t guestAddress);
     void MmQueryAllocationSize();
@@ -311,6 +321,25 @@ namespace kernel {
     void RtlFillMemoryUlong();
     void RtlCompareMemoryUlong();
 #pragma endregion
+
+    // sort me plz
+
+    void XeCryptShaInit();
+    void XeCryptShaUpdate();
+    void XeCryptShaFinal();
+
+    uint32_t XexLoadImage();
+    uint32_t XexUnloadImage();
+    uint32_t NtQueueApcThread();
+    uint32_t NtProtectVirtualMemory();
+    uint32_t XamShowMarketplaceUI();
+    uint32_t XamUserCheckPrivilege();
+    uint32_t XamUserAreUsersFriends();
+    uint32_t XamReadTileToTexture();
+    uint32_t XamShowGamerCardUIForXUID();
+    uint32_t XamContentGetLicenseMask();
+    uint32_t XamParseGamerTileKey();
+
 }
 }
 

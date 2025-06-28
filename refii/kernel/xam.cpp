@@ -658,3 +658,30 @@ void refii::kernel::XamUserWriteProfileSettings()
 {
     LOG_UTILITY("!!! STUB !!!");
 }
+
+#define E_INVALIDARG 0x80070057 // ERROR_INVALID_PARAMETER
+#define E_NOTIMPL 0x80004001
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamGetPrivateEnumStructureFromHandle,
+    (uint32_t enumHandle, uint32_t objPtrPtr), E_INVALIDARG)
+
+
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamShowAchievementsUI, (uint32_t userIndex), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamShowKeyboardUI, (), 0)
+
+
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XMsgCancelIORequest, 
+    (uint32_t overlappedPtr, uint32_t wait), E_NOTIMPL)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XMsgCompleteIORequest,
+    (uint32_t overlappedPtr, uint32_t status, uint32_t extendedError, uint32_t bytesTransferred), E_NOTIMPL)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamGetOverlappedResult,
+    (uint32_t overlappedPtr, uint32_t resultPtr, uint32_t wait), E_NOTIMPL)
+
+
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XamSessionRefObjByHandle, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XamSessionCreateHandle, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XamUserGetMembershipTierFromXUID, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XamUserGetOnlineCountryFromXUID, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XamVoiceClose, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XamVoiceCreate, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XamVoiceHeadsetPresent, ())
+DECLARE_STUB_FUNCTION_VOID(refii::kernel::XamVoiceSubmitPacket, ())

@@ -4,6 +4,8 @@
 #define MSGID(Area, Number) (uint32_t)((uint16_t)(Area) << 16 | (uint16_t)(Number))
 #define MSG_AREA(msgid)     (((msgid) >> 16) & 0xFFFF)
 #define MSG_NUMBER(msgid)   ((msgid) & 0xFFFF)
+
+
 namespace refii {
 namespace kernel {
     XCONTENT_DATA XamMakeContent(uint32_t type, const std::string_view& name);
@@ -101,5 +103,29 @@ namespace kernel {
     uint32_t XamUserGetXUID(uint32_t userIndex, be<uint64_t>* xuid);
 
     void XamUserWriteProfileSettings();
+
+    uint32_t XamGetOverlappedResult(uint32_t overlappedPtr, uint32_t resultPtr, uint32_t wait);
+
+    // TODO(crack): implement this later with rendering
+    uint32_t XamShowAchievementsUI(uint32_t userIndex);
+    uint32_t XamShowKeyboardUI();
+
+    // TODO(crack): look into dis
+    uint32_t XamGetPrivateEnumStructureFromHandle(uint32_t enumHandle, uint32_t objPtrPtr);
+
+    // TODO(crack): actually implement these functions. they are needed for synchronization
+    uint32_t XMsgCancelIORequest(uint32_t overlappedPtr, uint32_t wait);
+
+    uint32_t XMsgCompleteIORequest(uint32_t overlappedPtr, uint32_t status, uint32_t extendedError, uint32_t bytesTransferred);
+
+    uint32_t XamGetOverlappedResult(uint32_t overlappedPtr, uint32_t resultPtr, uint32_t wait);
+    void XamSessionRefObjByHandle();
+    void XamSessionCreateHandle();
+    void XamUserGetMembershipTierFromXUID();
+    void XamUserGetOnlineCountryFromXUID();
+    void XamVoiceClose();
+    void XamVoiceCreate();
+    void XamVoiceHeadsetPresent();
+    void XamVoiceSubmitPacket();
 }
 }
