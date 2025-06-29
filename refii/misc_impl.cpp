@@ -36,9 +36,9 @@ void GlobalMemoryStatusImpl(XLPMEMORYSTATUS lpMemoryStatus)
 //#ifdef _WIN32
 GUEST_FUNCTION_HOOK(sub_82170010, OutputDebugStringA);
 
-//GUEST_FUNCTION_HOOK(sub_824665A0, QueryPerformanceCounterImpl);
+GUEST_FUNCTION_HOOK(sub_8221EA28, QueryPerformanceCounterImpl);
 GUEST_FUNCTION_HOOK(sub_82CC6E78, QueryPerformanceFrequencyImpl);
-//GUEST_FUNCTION_HOOK(sub_8248D098, GetTickCountImpl);
+GUEST_FUNCTION_HOOK(sub_822660B0, GetTickCountImpl);
 
 GUEST_FUNCTION_HOOK(sub_82CC2440, GlobalMemoryStatusImpl);
 //
@@ -54,3 +54,5 @@ void GameLogMsg(char* msg)
 }
 
 GUEST_FUNCTION_HOOK(sub_82173070, GameLogMsg);
+
+
