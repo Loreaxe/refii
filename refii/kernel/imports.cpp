@@ -232,12 +232,12 @@ GUEST_FUNCTION_HOOK(__imp__ObReferenceObjectByName, refii::kernel::ObReferenceOb
 
 GUEST_FUNCTION_HOOK(sub_822387B8, refii::kernel::RtlAllocateHeap);
 GUEST_FUNCTION_HOOK(sub_82239490, refii::kernel::RtlFreeHeap);
-//GUEST_FUNCTION_HOOK(sub_8246A070, refii::kernel::RtlReAllocateHeap);
+GUEST_FUNCTION_HOOK(sub_82CC62E0, refii::kernel::RtlReAllocateHeap);
 GUEST_FUNCTION_HOOK(sub_82239808, refii::kernel::RtlSizeHeap);
-//GUEST_FUNCTION_HOOK(, refii::kernel::XAllocMem);
-//GUEST_FUNCTION_HOOK(, refii::kernel::XFreeMem);
-//GUEST_FUNCTION_HOOK(, refii::kernel::VirtualAlloc);
-//GUEST_FUNCTION_HOOK(, refii::kernel::VirtualFree);
+GUEST_FUNCTION_HOOK(sub_822386D0, refii::kernel::XAllocMem);
+GUEST_FUNCTION_HOOK(sub_822398B0, refii::kernel::XFreeMem);
+GUEST_FUNCTION_HOOK(sub_82CC74F8, refii::kernel::VirtualAlloc);
+GUEST_FUNCTION_HOOK(sub_82CC7548, refii::kernel::VirtualFree);
 // native memory operations
 GUEST_FUNCTION_HOOK(sub_82CB0B30, memmove);
 GUEST_FUNCTION_HOOK(sub_826BF770, memcpy);
