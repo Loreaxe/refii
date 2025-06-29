@@ -48,3 +48,9 @@ GUEST_FUNCTION_HOOK(sub_82CC2440, GlobalMemoryStatusImpl);
 //    sub_831B1630(ctx, base);
 //}
 
+void GameLogMsg(char* msg)
+{
+    LOG_UTILITY(msg);
+}
+
+GUEST_FUNCTION_HOOK(sub_82173070, GameLogMsg);
