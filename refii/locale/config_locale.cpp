@@ -1,4 +1,5 @@
 #include <user/config.h>
+#include <kernel/platform_defs.h>
 
 /*
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! LOCALISATION NOTES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

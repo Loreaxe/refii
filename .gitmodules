@@ -51,7 +51,7 @@
 	url = https://github.com/nlohmann/json
 [submodule "tools/XenosRecomp"]
 	path = tools/XenosRecomp
-	url = https://github.com/CRACKbomber/XenosRecomp.git
+	url = https://github.com/Loreaxe/XenosRecomp-refii.git
 [submodule "tools/XenonRecomp"]
 	path = tools/XenonRecomp
-	url = https://github.com/CRACKbomber/XenonRecomp.git
+	url = https://github.com/Loreaxe/XenonRecomp-refii.git

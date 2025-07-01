@@ -1,4 +1,5 @@
 #include "achievement_data.h"
+#include <kernel/platform_defs.h>
 
 #define NUM_RECORDS sizeof(Records) / sizeof(AchRecord)
 
