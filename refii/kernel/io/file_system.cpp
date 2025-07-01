@@ -13,6 +13,14 @@ struct FileHandle : refii::kernel::KernelObject
     std::filesystem::path path;
 };
 
+struct CFileHandle : FileHandle
+{
+    uint32_t shareMode;
+    bool isTextMode;
+
+    CFileHandle() : shareMode(0), isTextMode(false) {}
+};
+
 struct FindHandle : refii::kernel::KernelObject
 {
     std::error_code ec;
@@ -413,6 +421,226 @@ std::filesystem::path FileSystem::ResolvePath(const std::string_view& path, bool
     return std::u8string_view((const char8_t*)builtPath.c_str());
 }
 
+// Helper function to convert C mode string to file access flags
+static void ParseFileMode(const char* mode, uint32_t& desiredAccess, uint32_t& creationDisposition, bool& isTextMode)
+{
+    desiredAccess = 0;
+    creationDisposition = OPEN_EXISTING;
+    isTextMode = false;
+
+    if (!mode || !mode[0])
+        return;
+
+    // Parse primary mode
+    switch (mode[0])
+    {
+    case 'r':
+        desiredAccess = GENERIC_READ;
+        creationDisposition = OPEN_EXISTING;
+        break;
+    case 'w':
+        desiredAccess = GENERIC_WRITE;
+        creationDisposition = CREATE_ALWAYS;
+        break;
+    case 'a':
+        desiredAccess = GENERIC_WRITE;
+        creationDisposition = OPEN_ALWAYS;
+        break;
+    }
+
+    // Parse modifiers
+    for (int i = 1; mode[i]; i++)
+    {
+        switch (mode[i])
+        {
+        case '+':
+            desiredAccess = GENERIC_READ | GENERIC_WRITE;
+            break;
+        case 'b':
+            // Binary mode (default)
+            break;
+        case 't':
+            isTextMode = true;
+            break;
+        }
+    }
+}
+
+CFileHandle* __fsopen(const char* filename, const char* mode, int shflag)
+{
+    LOGF_UTILITY("filename=\"{}\", mode=\"{}\", shflag=0x{:x}",
+        filename ? filename : "(null)",
+        mode ? mode : "(null)",
+        shflag);
+
+    if (!filename || !mode)
+    {
+        GuestThread::SetLastError(ERROR_INVALID_PARAMETER);
+        return refii::kernel::GetInvalidKernelObject<CFileHandle>();
+    }
+
+    uint32_t desiredAccess, creationDisposition;
+    bool isTextMode;
+    ParseFileMode(mode, desiredAccess, creationDisposition, isTextMode);
+
+    // Convert sharing flags
+    uint32_t shareMode = 0;
+    switch (shflag)
+    {
+    case 0x10: // _SH_DENYRW - deny read/write
+        shareMode = 0;
+        break;
+    case 0x20: // _SH_DENYWR - deny write
+        shareMode = FILE_SHARE_READ;
+        break;
+    case 0x30: // _SH_DENYRD - deny read  
+        shareMode = FILE_SHARE_WRITE;
+        break;
+    case 0x40: // _SH_DENYNO - deny none
+        shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+        break;
+    default:
+        shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+        break;
+    }
+
+    // Resolve path and open file
+    std::filesystem::path filePath = FileSystem::ResolvePath(filename, false);
+    std::fstream fileStream;
+    std::ios::openmode fileOpenMode = std::ios::binary;
+
+    if (desiredAccess & GENERIC_READ)
+        fileOpenMode |= std::ios::in;
+    if (desiredAccess & GENERIC_WRITE)
+        fileOpenMode |= std::ios::out;
+
+    if (mode[0] == 'a')
+        fileOpenMode |= std::ios::app;
+
+    if (mode[0] == 'w')
+        fileOpenMode |= std::ios::trunc;
+
+    fileStream.open(filePath, fileOpenMode);
+    if (!fileStream.is_open())
+    {
+        GuestThread::SetLastError(GetLastError());
+        return refii::kernel::GetInvalidKernelObject<CFileHandle>();
+    }
+
+    CFileHandle* fileHandle = refii::kernel::CreateKernelObject<CFileHandle>();
+    fileHandle->stream = std::move(fileStream);
+    fileHandle->path = std::move(filePath);
+    fileHandle->shareMode = shareMode;
+    fileHandle->isTextMode = isTextMode;
+
+    LOGF_UTILITY("handle=0x{:x}", refii::kernel::GetKernelHandle(fileHandle));
+    return fileHandle;
+}
+int __fsclose(CFileHandle* stream)
+{
+    LOGF_UTILITY("stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
+
+    if (refii::kernel::IsInvalidKernelObject(stream))
+    {
+        GuestThread::SetLastError(ERROR_INVALID_HANDLE);
+        return -1;
+    }
+
+    stream->stream.close();
+    refii::kernel::DestroyKernelObject(stream);
+
+    return 0;
+}
+CFileHandle* _fopen(const char* filename, const char* mode)
+{
+    // Default sharing mode is _SH_DENYNO (allow all)
+    return __fsopen(filename, mode, 0x40);
+}
+int ___fclose(CFileHandle* stream)
+{
+    return __fsclose(stream);
+}
+size_t __fread(void* buffer, size_t size, size_t count, CFileHandle* stream)
+{
+    if (refii::kernel::IsInvalidKernelObject(stream) || !buffer)
+        return 0;
+
+    size_t totalBytes = size * count;
+    stream->stream.read(static_cast<char*>(buffer), totalBytes);
+
+    if (stream->stream.bad())
+        return 0;
+
+    size_t bytesRead = stream->stream.gcount();
+    return bytesRead / size;
+}
+size_t __fwrite(const void* buffer, size_t size, size_t count, CFileHandle* stream)
+{
+    if (refii::kernel::IsInvalidKernelObject(stream) || !buffer)
+        return 0;
+
+    size_t totalBytes = size * count;
+    stream->stream.write(static_cast<const char*>(buffer), totalBytes);
+
+    if (stream->stream.bad())
+        return 0;
+
+    return count;
+}
+int __fseek(CFileHandle* stream, long offset, int origin)
+{
+    if (refii::kernel::IsInvalidKernelObject(stream))
+        return -1;
+
+    std::ios::seekdir seekDir;
+    switch (origin)
+    {
+    case SEEK_SET:
+        seekDir = std::ios::beg;
+        break;
+    case SEEK_CUR:
+        seekDir = std::ios::cur;
+        break;
+    case SEEK_END:
+        seekDir = std::ios::end;
+        break;
+    default:
+        return -1;
+    }
+
+    stream->stream.clear();
+    stream->stream.seekg(offset, seekDir);
+
+    return stream->stream.bad() ? -1 : 0;
+}
+long __ftell(CFileHandle* stream)
+{
+    if (refii::kernel::IsInvalidKernelObject(stream))
+        return -1;
+
+    std::streampos pos = stream->stream.tellg();
+    return static_cast<long>(pos);
+}
+int __feof(CFileHandle* stream)
+{
+    if (refii::kernel::IsInvalidKernelObject(stream))
+        return 1;
+
+    return stream->stream.eof() ? 1 : 0;
+}
+int __ferror(CFileHandle* stream)
+{
+    if (refii::kernel::IsInvalidKernelObject(stream))
+        return 1;
+
+    return (stream->stream.bad() || stream->stream.fail()) ? 1 : 0;
+}
+void __clearerr(CFileHandle* stream)
+{
+    if (!refii::kernel::IsInvalidKernelObject(stream))
+        stream->stream.clear();
+}
+
 GUEST_FUNCTION_HOOK(sub_82CC3490, XCreateFileA);
 GUEST_FUNCTION_HOOK(sub_82CC7468, XFindFirstFileA);
 GUEST_FUNCTION_HOOK(sub_82CC7410, XFindNextFileA);
@@ -427,3 +655,16 @@ GUEST_FUNCTION_HOOK(sub_82CC6FB8, XWriteFile);
 
 // XMountUtilityDrive
 GUEST_FUNCTION_STUB(sub_8248CB00);
+
+// Native C functions (optional... can be stubbed as well - crack)
+// function names are prefixed with "__" to avoid conflicts with existing crt functions
+GUEST_FUNCTION_HOOK(sub_82CAA910, __fsopen);
+GUEST_FUNCTION_HOOK(sub_82CC5E50, __fsclose);
+GUEST_FUNCTION_HOOK(sub_82CAABE8, ___fclose);
+GUEST_FUNCTION_HOOK(sub_82CB1B90, __fread);
+//GUEST_FUNCTION_HOOK(sub_, fwrite);
+//GUEST_FUNCTION_HOOK(sub_, fseek);
+//GUEST_FUNCTION_HOOK(sub_, ftell);
+//GUEST_FUNCTION_HOOK(sub_, feof);
+//GUEST_FUNCTION_HOOK(sub_, ferror);
+//GUEST_FUNCTION_HOOK(sub_, clearerr);
