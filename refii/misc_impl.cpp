@@ -76,9 +76,6 @@ void GameLogMsg(char* msg)
 GUEST_FUNCTION_HOOK(sub_82173070, GameLogMsg);
 
 
-GUEST_FUNCTION_HOOK(sub_82173070, GameLogMsg);
-
-
 // dobious stubs
 /*
     Probably safe to stub this one for now. I am not sure exactly what it's purpose is but let's find out later.
