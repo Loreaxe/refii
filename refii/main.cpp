@@ -190,8 +190,8 @@ int main(int argc, char *argv[])
 
     //ModLoader::Init();
 
-    if (!PersistentStorageManager::LoadBinary())
-        LOGFN_ERROR("Failed to load persistent storage binary... (status code {})", (int)PersistentStorageManager::BinStatus);
+    //if (!PersistentStorageManager::LoadBinary())
+    //    LOGFN_ERROR("Failed to load persistent storage binary... (status code {})", (int)PersistentStorageManager::BinStatus);
 
     if (refii::kernel::g_memory.base == nullptr)
     {
@@ -223,14 +223,14 @@ int main(int argc, char *argv[])
 
     //if (!runInstallerWizard)
     //{
-        if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
-        {
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
-            std::_Exit(1);
-        }
+        //if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
+        //{
+        //    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
+        //    std::_Exit(1);
+        //}
     //}
 
-   Video::StartPipelinePrecompilation();
+   // Video::StartPipelinePrecompilation();
 
     GuestThread::Start({ entry, 0, 0 });
 
