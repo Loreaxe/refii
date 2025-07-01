@@ -71,3 +71,9 @@ GUEST_FUNCTION_HOOK(sub_82173070, GameLogMsg);
                             -- Exception reading memory address 0x24 (translated == 0x100000024)
 */
 GUEST_FUNCTION_STUB(sub_83236B98); 
+
+// sub_82C87FF0 attempts to init sockets
+GUEST_FUNCTION_STUB(sub_82C87FF0)
+
+// sub_82CFF790 is attempting to init xbl services
+GUEST_FUNCTION_STUB(sub_822EAAE0)
