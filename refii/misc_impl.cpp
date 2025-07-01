@@ -1,22 +1,42 @@
 #include "stdafx.h"
 #include <kernel/function.h>
+#include <chrono>
+#include <cstdint>
+#include <cstring>
+#include <cstdio>
+
+#ifndef _WIN32
+// Define missing Windows types and constants on Linux
+using LARGE_INTEGER = struct {
+    int64_t QuadPart;
+};
+
+#define TRUE 1
+
+// Dummy implementation of OutputDebugStringA for Linux
+void OutputDebugStringA(const char* str) {
+    std::puts(str);
+}
+#endif
 
 uint32_t QueryPerformanceCounterImpl(LARGE_INTEGER* lpPerformanceCount)
 {
-    lpPerformanceCount->QuadPart = ByteSwap(std::chrono::steady_clock::now().time_since_epoch().count());
+    auto now = std::chrono::steady_clock::now().time_since_epoch();
+    lpPerformanceCount->QuadPart = ByteSwap(std::chrono::duration_cast<std::chrono::nanoseconds>(now).count());
     return TRUE;
 }
 
 uint32_t QueryPerformanceFrequencyImpl(LARGE_INTEGER* lpFrequency)
 {
-    constexpr auto Frequency = std::chrono::steady_clock::period::den / std::chrono::steady_clock::period::num;
+    constexpr int64_t Frequency = std::chrono::steady_clock::period::den / std::chrono::steady_clock::period::num;
     lpFrequency->QuadPart = ByteSwap(Frequency);
     return TRUE;
 }
 
 uint32_t GetTickCountImpl()
 {
-    return uint32_t(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+    auto now = std::chrono::steady_clock::now().time_since_epoch();
+    return uint32_t(std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
 }
 
 void GlobalMemoryStatusImpl(XLPMEMORYSTATUS lpMemoryStatus)

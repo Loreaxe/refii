@@ -1,5 +1,6 @@
 #include <stdafx.h>
 #include "mutant.h"
+#include <kernel/platform_defs.h>
 
 
 uint32_t refii::kernel::Mutant::Wait(uint32_t timeout)

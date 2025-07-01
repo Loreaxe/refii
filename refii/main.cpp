@@ -34,6 +34,10 @@ static std::array<std::string_view, 3> g_D3D12RequiredModules =
 };
 #endif
 
+#ifndef _WIN32
+#define OPEN_EXISTING 3
+#endif
+
 const size_t XMAIOBegin = 0x7FEA0000;
 const size_t XMAIOEnd = XMAIOBegin + 0x0000FFFF;
 refii::kernel::GuestMemory refii::kernel::g_memory;
@@ -91,25 +95,28 @@ uint32_t LdrLoadModule(const std::filesystem::path &path)
     return entry;
 }
 
+__attribute__((noinline))
+void PrintAVXUnsupported()
+{
+    printf("[*] CPU does not support the AVX instruction set.\n");
+
+#ifdef _WIN32
+    MessageBoxA(nullptr, "Your CPU does not meet the minimum system requirements.", "Unleashed Recompiled", MB_ICONERROR);
+#endif
+
+    std::_Exit(1);
+}
+
 __attribute__((constructor(101), target("no-avx,no-avx2"), noinline))
 void init()
 {
 #ifdef __x86_64__
     uint32_t eax, ebx, ecx, edx;
-
-    // Execute CPUID for processor info and feature bits.
     __get_cpuid(1, &eax, &ebx, &ecx, &edx);
 
-    // Check for AVX support.
     if ((ecx & (1 << 28)) == 0)
     {
-        printf("[*] CPU does not support the AVX instruction set.\n");
-
-#ifdef _WIN32
-        MessageBoxA(nullptr, "Your CPU does not meet the minimum system requirements.", "Unleashed Recompiled", MB_ICONERROR);
-#endif
-
-        std::_Exit(1);
+        PrintAVXUnsupported();  // now legal
     }
 #endif
 }

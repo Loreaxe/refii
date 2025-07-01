@@ -1,5 +1,6 @@
 #include <stdafx.h>
 #include "semaphore.h"
+#include <kernel/platform_defs.h>
 
 uint32_t refii::kernel::Semaphore::Wait(uint32_t timeout)
 {

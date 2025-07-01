@@ -1,27 +1,54 @@
 project("refii")
 
+if (UNIX AND NOT APPLE)
+    find_package(PkgConfig REQUIRED)
+
+    # Check for X11
+    find_package(X11)
+    if (X11_FOUND)
+        message(STATUS "✅ X11 support detected")
+        set(HAS_X11 TRUE)
+    endif()
+
+    # Check for Wayland
+    pkg_check_modules(WAYLAND_CLIENT wayland-client)
+    if (WAYLAND_CLIENT_FOUND)
+        message(STATUS "✅ Wayland support detected")
+        set(HAS_WAYLAND TRUE)
+    endif()
+endif()
+
 if (WIN32)
     option(UNLEASHED_RECOMP_D3D12 "Add D3D12 support for rendering" ON)
 endif()
 
-add_compile_options(
-    -fno-strict-aliasing
-    -Wno-switch
-    -Wno-unused-function
-    -Wno-unused-variable
-    -Wno-unused-but-set-variable
-    -Wno-void-pointer-to-int-cast
-    -Wno-int-to-void-pointer-cast
-    -Wno-invalid-offsetof
-    -Wno-null-arithmetic
-    -Wno-null-conversion
-    -Wno-tautological-undefined-compare
-)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options(
+        -Wno-null-conversion
+        -Wno-tautological-undefined-compare
+        -Wno-null-arithmetic
+        -Wno-int-to-void-pointer-cast
+        -Wno-void-pointer-to-int-cast
+    )
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(
+        -fno-strict-aliasing
+        -Wno-switch
+        -Wno-unused-function
+        -Wno-unused-variable
+        -Wno-unused-but-set-variable
+        -Wno-invalid-offsetof
+    )
+endif()
 
+include(CheckCXXCompilerFlag)
 if (WIN32)
     add_compile_options(/fp:strict)
 else()
-    add_compile_options(-ffp-model=strict)
+    check_cxx_compiler_flag("-ffp-model=strict" HAS_FFP_MODEL_STRICT)
+    if (HAS_FFP_MODEL_STRICT)
+        add_compile_options(-ffp-model=strict)
+    endif()
 endif()
 
 add_compile_definitions(
@@ -258,51 +285,72 @@ endif()
 if (UNLEASHED_RECOMP_D3D12)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directx12-agility CONFIG REQUIRED)
+
+    # DXC Header Support
+    if (NOT TARGET Microsoft::DirectXShaderCompiler)
+        find_package(directx-dxc REQUIRED)
+    endif()
+
     target_compile_definitions(refii PRIVATE 
         UNLEASHED_RECOMP_D3D12
         D3D12MA_USING_DIRECTX_HEADERS
         D3D12MA_OPTIONS16_SUPPORTED
     )
-endif()
-
-
-if (NOT TARGET Microsoft::DirectXShaderCompiler)
-    find_package(directx-dxc REQUIRED)
-endif()
-find_package(CURL REQUIRED)
-
-if (UNLEASHED_RECOMP_D3D12)
-    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
-    add_custom_command(TARGET refii POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Layers,IMPORTED_LOCATION_DEBUG> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
-       COMMAND_EXPAND_LISTS
-    )
-    
-    find_file(DIRECTX_DXIL_LIBRARY "dxil.dll")
-    file(COPY ${DIRECTX_DXIL_LIBRARY} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
     target_link_libraries(refii PRIVATE
-        Microsoft::DirectX-Headers 
-        Microsoft::DirectX-Guids 
+        Microsoft::DirectX-Headers
         Microsoft::DirectX12-Agility
+        Microsoft::DirectX-Guids
         Microsoft::DirectXShaderCompiler
         Microsoft::DXIL
         dxgi
     )
+
+    target_include_directories(refii PRIVATE
+        ${REFII_TOOLS_ROOT}/XenosRecomp/thirdparty/dxc-bin/include
+    )
+
+    # Post-build copy of DLLs
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
+    add_custom_command(TARGET refii POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Layers,IMPORTED_LOCATION_DEBUG> ${CMAKE_CURRENT_BINARY_DIR}/D3D12
+        COMMAND_EXPAND_LISTS
+    )
+
+    find_file(DIRECTX_DXIL_LIBRARY "dxil.dll")
+    file(COPY ${DIRECTX_DXIL_LIBRARY} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
-file(CHMOD ${DIRECTX_DXC_TOOL} PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+if (NOT WIN32)
+    if (NOT DEFINED DIRECTX_DXC_TOOL OR NOT EXISTS "${DIRECTX_DXC_TOOL}")
+        find_program(DIRECTX_DXC_TOOL dxc PATHS "${REFII_TOOLS_ROOT}/XenosRecomp/thirdparty/dxc-bin/bin/x64" NO_DEFAULT_PATH)
+    endif()
+
+    if (DIRECTX_DXC_TOOL AND EXISTS "${DIRECTX_DXC_TOOL}")
+        file(CHMOD "${DIRECTX_DXC_TOOL}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+    else()
+        message(WARNING "⚠️ DXC tool not found or invalid path: '${DIRECTX_DXC_TOOL}' — skipping chmod.")
+    endif()
+endif()
 
 if (WIN32)
     target_link_libraries(refii PRIVATE
-        comctl32
-        dwmapi
-        ntdll
-        Shcore
-        Synchronization
-        winmm
+        comctl32 dwmapi ntdll Shcore Synchronization winmm
     )
+endif()
+
+# Make sure libcurl is found
+find_package(CURL REQUIRED)
+
+if (HAS_X11)
+    target_link_libraries(refii PRIVATE ${X11_LIBRARIES})
+    target_include_directories(refii PRIVATE ${X11_INCLUDE_DIR})
+endif()
+
+if (HAS_WAYLAND)
+    target_link_libraries(refii PRIVATE ${WAYLAND_CLIENT_LIBRARIES})
+    target_include_directories(refii PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIRS})
 endif()
 
 target_link_libraries(refii PRIVATE
@@ -378,17 +426,19 @@ BIN2C(TARGET_OBJ refii SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/game_icon_ni
 function(compile_shader FILE_PATH TARGET_NAME)
     set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/${FILE_PATH}.hlsl)
     cmake_path(GET FILE_PATH STEM VARIABLE_NAME)
+
     if (UNLEASHED_RECOMP_D3D12)
         add_custom_command(
             OUTPUT ${FILE_PATH}.dxil.h
-            COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
+            COMMAND env "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/../tools/XenosRecomp/thirdparty/dxc-bin/lib/x64" ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
             DEPENDS ${FILE_PATH}
         )
         target_sources(refii PRIVATE ${FILE_PATH}.dxil.h)
     endif()
+
     add_custom_command(
         OUTPUT ${FILE_PATH}.spirv.h
-        COMMAND ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${FILE_PATH}.spirv.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_spirv
+        COMMAND env "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/../tools/XenosRecomp/thirdparty/dxc-bin/lib/x64" ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${FILE_PATH}.spirv.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_spirv
         DEPENDS ${FILE_PATH}
     )
     target_sources(refii PRIVATE ${FILE_PATH}.spirv.h)

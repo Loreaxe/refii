@@ -1,5 +1,7 @@
 #pragma once
 
+#include <condition_variable>
+
 #include <kernel/obj/kernel_object.h>
 namespace refii {
     namespace kernel {

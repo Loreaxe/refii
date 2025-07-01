@@ -9,6 +9,7 @@
 #include <user/paths.h>
 #include <SDL.h>
 #include <kernel/kernel.h>
+#include "platform_defs.h"
 
 struct XamListener : refii::kernel::KernelObject
 {
@@ -247,8 +248,8 @@ uint32_t refii::kernel::XamShowMessageBoxUI(uint32_t dwUserIndex, be<uint16_t>* 
     if (pOverlapped)
     {
         pOverlapped->dwCompletionContext = GuestThread::GetCurrentThreadId();
-        pOverlapped->Error = 0;
-        pOverlapped->Length = -1;
+        pOverlapped->errorLength.Error = 0;
+        pOverlapped->errorLength.Length = -1;
     }
 
     XamNotifyEnqueueEvent(9, 0);

@@ -28709,3 +28709,27 @@ labels = [
     0x832125AC,
 ]
 
+#Added Tables
+
+[[switch]]
+base = 0x82BEFD5C
+r = 30
+default = 0x82BF04E0
+labels = [
+    0x82BEFD84,
+    0x82BEFDC0,
+    0x82BEFE0C,
+    0x82BEFE34,
+    0x82BEFEB8,
+    0x82BEFEE0,
+    0x82BEFF10,
+    0x82BEFF40,
+    0x82BEFF0C,
+    0x82BF0084,
+    0x82BF01D0,
+    0x82BF01F8,
+    0x82BF03CC,
+    0x82BF0478,
+    0x82BF04F0,
+    0x82BF0518,
+]

@@ -16,7 +16,10 @@
 #define LOAD_ZSTD_TEXTURE(name) LoadTexture(decompressZstd(name, name##_uncompressed_size).get(), name##_uncompressed_size)
 
 #define PSO_CACHING
+
+#ifdef _WIN32
 #define UNLEASHED_RECOMP_D3D12
+#endif
 
 using namespace plume;
 

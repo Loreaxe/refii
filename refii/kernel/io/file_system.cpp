@@ -6,6 +6,7 @@
 #include <user/config.h>
 #include <stdafx.h>
 #include <kernel/kernel.h>
+#include <kernel/platform_defs.h>
 
 struct FileHandle : refii::kernel::KernelObject
 {

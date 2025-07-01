@@ -5,6 +5,7 @@
 #include <kernel/function.h>
 #include "ppc_context.h"
 #include <kernel/kernel.h>
+#include <kernel/platform_defs.h>
 
 constexpr size_t PCR_SIZE = 0xAB0;
 constexpr size_t TLS_SIZE = 0x100;

@@ -5,6 +5,7 @@
 #include <os/logger.h>
 #include <ui/game_window.h>
 #include <app.h>
+#include <kernel/platform_defs.h>
 
 #define TRANSLATE_INPUT(S, X) SDL_GameControllerGetButton(controller, S) << FirstBitLow(X)
 #define VIBRATION_TIMEOUT_MS 5000

@@ -1,6 +1,7 @@
 #pragma once
 #include <kernel/obj/kernel_object.h>
 #include <cpu/ppc_context.h>
+#include <condition_variable>
 
 #ifdef _WIN32
 #include <ntstatus.h>

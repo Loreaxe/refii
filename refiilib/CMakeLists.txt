@@ -4,10 +4,15 @@ add_compile_options(
     -fno-strict-aliasing
 )
 
+include(CheckCXXCompilerFlag)
+
 if (WIN32)
     add_compile_options(/fp:strict)
 else()
-    add_compile_options(-ffp-model=strict)
+    check_cxx_compiler_flag("-ffp-model=strict" HAS_FFP_MODEL_STRICT)
+    if (HAS_FFP_MODEL_STRICT)
+        add_compile_options(-ffp-model=strict)
+    endif()
 endif()
 
 set(REFII_PPC_RECOMPILED_SOURCES 
