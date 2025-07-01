@@ -45,6 +45,7 @@ set(REFII_KERNEL_CXX_SOURCES
     "kernel/obj/event.cpp"
     "kernel/obj/mutant.cpp"
     "kernel/obj/semaphore.cpp"
+    "kernel/stubs.cpp"
 )
 
 set(REFII_LOCALE_CXX_SOURCES

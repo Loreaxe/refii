@@ -186,21 +186,6 @@ uint32_t refii::kernel::KeTryToAcquireSpinLockAtRaisedIrql(uint32_t* spinLock)
     return spinLockRef.compare_exchange_weak(expected, g_ppcContext->r13.u32);
 }
 
-void refii::kernel::TimeStampBundle()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::DebugMonitorData()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::CertMonitorData()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
 void refii::kernel::KeSetBasePriorityThread(GuestThreadHandle* hThread, int priority)
 {
 #ifdef _WIN32
@@ -215,11 +200,6 @@ void refii::kernel::KeSetBasePriorityThread(GuestThreadHandle* hThread, int prio
 
     SetThreadPriority(hThread == GetKernelObject(CURRENT_THREAD_HANDLE) ? GetCurrentThread() : hThread->thread.native_handle(), priority);
 #endif
-}
-
-void refii::kernel::KeQueryBasePriorityThread()
-{
-    LOG_UTILITY("!!! STUB !!!");
 }
 
 uint32_t refii::kernel::KeSetAffinityThread(uint32_t Thread, uint32_t Affinity, be<uint32_t>* lpPreviousAffinity)
@@ -238,11 +218,6 @@ void refii::kernel::KeBugCheckEx()
 uint32_t refii::kernel::KeGetCurrentProcessType()
 {
     return 1;
-}
-
-void refii::kernel::ExThreadObjectType()
-{
-    LOG_UTILITY("!!! STUB !!!");
 }
 
 void refii::kernel::KfReleaseSpinLock(uint32_t* spinLock)
@@ -301,72 +276,12 @@ uint32_t refii::kernel::XAudioGetVoiceCategoryVolumeChangeMask(uint32_t Driver, 
     return 0;
 }
 
-void refii::kernel::XexGetProcedureAddress()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XexGetModuleSection()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XNotifyPositionUI()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XAudioGetVoiceCategoryVolume()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::KeEnableFpuExceptions()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XeKeysConsolePrivateKeySign()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XeKeysConsoleSignatureVerification()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlTimeFieldsToTime()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
 void refii::kernel::RtlInitAnsiString(XANSI_STRING* destination, char* source)
 {
     const uint16_t length = source ? (uint16_t)strlen(source) : 0;
     destination->Length = length;
     destination->MaximumLength = length + 1;
     destination->Buffer = source;
-}
-
-void refii::kernel::vsprintf_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::DbgPrint()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::__C_specific_handler_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlNtStatusToDosError()
-{
-    LOG_UTILITY("!!! STUB !!!");
 }
 
 uint32_t refii::kernel::RtlUnicodeToMultiByteN(char* MultiByteString, uint32_t MaxBytesInMultiByteString, be<uint32_t>* BytesInMultiByteString, const be<uint16_t>* UnicodeString, uint32_t BytesInUnicodeString)
@@ -389,106 +304,16 @@ uint32_t refii::kernel::RtlUnicodeToMultiByteN(char* MultiByteString, uint32_t M
     return STATUS_SUCCESS;
 }
 
-void refii::kernel::ObDereferenceObject()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
 uint32_t refii::kernel::ObReferenceObjectByHandle(uint32_t handle, uint32_t objectType, be<uint32_t>* object)
 {
     *object = handle;
     return 0;
 }
 
-void refii::kernel::RtlImageXexHeaderField()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
 void refii::kernel::MmFreePhysicalMemory(uint32_t type, uint32_t guestAddress)
 {
     if (guestAddress != NULL)
         g_userHeap.Free(g_memory.Translate(guestAddress));
-}
-
-void refii::kernel::RtlFillMemoryUlong()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlCompareMemoryUlong()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlRaiseException_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::_vsnprintf_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::sprintf_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::ExRegisterTitleTerminateNotification()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::ObDeleteSymbolicLink()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::ObCreateSymbolicLink()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::_vswprintf_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::_vscwprintf_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::_swprintf_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::_snwprintf_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XeCryptBnQwBeSigVerify()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XeKeysGetKey()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XeCryptRotSumSha()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XeCryptSha()
-{
-    LOG_UTILITY("!!! STUB !!!");
 }
 
 uint32_t refii::kernel::RtlMultiByteToUnicodeN(be<uint16_t>* UnicodeString, uint32_t MaxBytesInUnicodeString, be<uint32_t>* BytesInUnicodeString, const char* MultiByteString, uint32_t BytesInMultiByteString)
@@ -504,81 +329,6 @@ uint32_t refii::kernel::RtlMultiByteToUnicodeN(be<uint16_t>* UnicodeString, uint
     return STATUS_SUCCESS;
 }
 
-void refii::kernel::DbgBreakPoint()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlCompareStringN()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::_snprintf_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlTimeToTimeFields()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlFreeAnsiString()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlUnicodeStringToAnsiString()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlInitUnicodeString()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XexLoadImageHeaders()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::ObOpenObjectByName()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::ObReferenceObjectByName()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlUpcaseUnicodeChar()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::ObIsTitleObject()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::ObReferenceObject()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XMsgStartIORequestEx()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::XexGetModuleHandle()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
 uint32_t refii::kernel::XMsgInProcessCall(uint32_t app, uint32_t message, be<uint32_t>* param1, be<uint32_t>* param2)
 {
     if (message == 0x7001B)
@@ -590,17 +340,6 @@ uint32_t refii::kernel::XMsgInProcessCall(uint32_t app, uint32_t message, be<uin
 
     return 0;
 }
-
-void refii::kernel::XexExecutableModuleHandle()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::ExLoadedCommandLine()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
 uint32_t refii::kernel::XGetGameRegion()
 {
     if (Config::Language == ELanguage::Japanese)
@@ -711,16 +450,6 @@ uint32_t refii::kernel::ExCreateThread(be<uint32_t>* handle, uint32_t stackSize,
     return 0;
 }
 
-void refii::kernel::ExTerminateThread()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::KeLeaveCriticalRegion()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
 void refii::kernel::RtlLeaveCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
     cs->RecursionCount--;
@@ -790,34 +519,9 @@ void refii::kernel::RtlInitializeCriticalSectionAndSpinCount(XRTL_CRITICAL_SECTI
     cs->OwningThread = 0;
 }
 
-void refii::kernel::RtlUnwind_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::RtlCaptureContext_x()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::KeEnterCriticalRegion()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
 void refii::kernel::KeBugCheck()
 {
     __builtin_debugtrap();
-}
-
-void refii::kernel::KeLockL2()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::KeUnlockL2()
-{
-    LOG_UTILITY("!!! STUB !!!");
 }
 
 bool refii::kernel::KeSetEvent(XKEVENT* pEvent, uint32_t Increment, bool Wait)
@@ -903,66 +607,6 @@ uint32_t refii::kernel::KeTlsFree(uint32_t dwTlsIndex)
     return TRUE;
 }
 
-void refii::kernel::NtOpenFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-uint32_t refii::kernel::NtCreateFile(be<uint32_t>* FileHandle, uint32_t DesiredAccess, XOBJECT_ATTRIBUTES* Attributes, XIO_STATUS_BLOCK* IoStatusBlock, uint64_t* AllocationSize, uint32_t FileAttributes, uint32_t ShareAccess, uint32_t CreateDisposition, uint32_t CreateOptions)
-{
-    LOG_UTILITY("!!! STUB !!!");
-    return 0;
-}
-
-void refii::kernel::NtWriteFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::NtSetInformationFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::NtQueryInformationFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::NtQueryVolumeInformationFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::NtQueryDirectoryFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::NtReadFileScatter()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::NtReadFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::NtQueryFullAttributesFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::NtFlushBuffersFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::NtQueryVirtualMemory()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
 
 uint32_t refii::kernel::NtSuspendThread(GuestThreadHandle* hThread, uint32_t* suspendCount)
 {
@@ -972,17 +616,6 @@ uint32_t refii::kernel::NtSuspendThread(GuestThreadHandle* hThread, uint32_t* su
     hThread->suspended.wait(true);
 
     return S_OK;
-}
-
-uint32_t refii::kernel::NtFreeVirtualMemory(uint32_t processHandle, be<uint32_t>* baseAddress, be<uint32_t>* regionSize, uint32_t freeType)
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-uint32_t refii::kernel::NtAllocateVirtualMemory(uint32_t processHandle, be<uint32_t>* baseAddress, uint32_t zeroBits, be<uint32_t>* regionSize, uint32_t allocationType, uint32_t protect)
-{
-    LOG_UTILITY("!!! STUB !!!");
-    return 0;
 }
 
 uint32_t refii::kernel::NtWaitForSingleObjectEx(uint32_t Handle, uint32_t WaitMode, uint32_t Alertable, be<int64_t>* Timeout)
@@ -1007,10 +640,6 @@ uint32_t refii::kernel::NtCreateEvent(be<uint32_t>* handle, void* objAttributes,
     return 0;
 }
 
-void refii::kernel::NtDuplicateObject()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
 
 uint32_t refii::kernel::NtCreateMutant(be<uint32_t>* handle, void* objAttributes, uint32_t initialOwner)
 {
@@ -1026,11 +655,6 @@ uint32_t refii::kernel::NtReleaseMutant(Mutant* handle, be<uint32_t>* previousCo
     }
 
     return handle->Release();
-}
-
-void refii::kernel::NtDeviceIoControlFile()
-{
-    LOG_UTILITY("!!! STUB !!!");
 }
 
 uint32_t refii::kernel::NtPulseEvent(Event* handle, uint32_t* previousState)
@@ -1102,11 +726,6 @@ uint32_t refii::kernel::NtReleaseSemaphore(Semaphore* Handle, uint32_t ReleaseCo
     return STATUS_SUCCESS;
 }
 
-void refii::kernel::NtWaitForMultipleObjectsEx()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
 uint32_t refii::kernel::RtlAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t size)
 {
     void* ptr = g_userHeap.Alloc(size);
@@ -1167,16 +786,6 @@ void refii::kernel::XFreeMem(uint32_t baseAddress, uint32_t flags)
 {
     if (baseAddress != NULL)
         g_userHeap.Free(g_memory.Translate(baseAddress));
-}
-
-void refii::kernel::MmQueryStatistics()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
-
-void refii::kernel::ExFreePool()
-{
-    LOG_UTILITY("!!! STUB !!!");
 }
 
 uint32_t refii::kernel::VirtualAlloc(uint32_t lpAddress, uint32_t dwSize, uint32_t flAllocationType, uint32_t flProtect)
@@ -1279,20 +888,11 @@ uint32_t refii::kernel::MmQueryAddressProtect(uint32_t guestAddress)
     return PAGE_READWRITE;
 }
 
-void refii::kernel::MmQueryAllocationSize()
-{
-    LOG_UTILITY("!!! STUB !!!");
-}
 
 uint32_t refii::kernel::ExAllocatePool(uint32_t size)
 {
     void* ptr = g_userHeap.Alloc(size);
     return g_memory.MapVirtual(ptr);
-}
-
-void refii::kernel::ExAllocatePoolTypeWithTag()
-{
-    LOG_UTILITY("!!! STUB !!!");
 }
 
 uint32_t refii::kernel::XamAlloc(uint32_t size)
@@ -1311,22 +911,3 @@ void* MmGetHostAddress(uint32_t ptr)
 {
     return refii::kernel::g_memory.Translate(ptr);
 }
-
-// Non-critical
-DECLARE_STUB_FUNCTION_VOID(refii::kernel::XeCryptShaInit, ())
-DECLARE_STUB_FUNCTION_VOID(refii::kernel::XeCryptShaUpdate, ())
-DECLARE_STUB_FUNCTION_VOID(refii::kernel::XeCryptShaFinal, ())
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XexLoadImage, (), 0)
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XexUnloadImage, (), 0)
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::NtQueueApcThread, (), 0)
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::NtProtectVirtualMemory, (), 0)
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamShowMarketplaceUI, (), 0)
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamUserCheckPrivilege, (), 0)
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamUserAreUsersFriends, (), 0) // :(
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamReadTileToTexture, (), 0)
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamShowGamerCardUIForXUID, (), 0)
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamContentGetLicenseMask, (), 0)
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XamParseGamerTileKey, (), 0)
-DECLARE_STUB_FUNCTION_VOID(refii::kernel::NtCancelTimer, ())
-DECLARE_STUB_FUNCTION_VOID(refii::kernel::NtCreateTimer, ())
-DECLARE_STUB_FUNCTION_VOID(refii::kernel::NtSetTimerEx, ())
