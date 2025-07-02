@@ -201,12 +201,12 @@ int main(int argc, char *argv[])
 
     refii::kernel::g_userHeap.Init();
 
-    const auto gameContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
-    const auto cacheContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "Cache");
-
+    const auto gameContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "game");
+    const auto cacheContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "cache");
+    const auto updateContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "update");
     refii::kernel::XamRegisterContent(gameContent, "P:/x360/refii-game/game");
     refii::kernel::XamRegisterContent(cacheContent, "P:/x360/refii-game/cache");
-
+    refii::kernel::XamRegisterContent(updateContent, "P:/x360/refii-game/update");
     // Mount game
     refii::kernel::XamContentCreateEx(0, "game", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
@@ -216,6 +216,8 @@ int main(int argc, char *argv[])
     // Mount cache
     refii::kernel::XamContentCreateEx(0, "cache", &cacheContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
+    // Mount update
+    refii::kernel::XamContentCreateEx(0, "update", &updateContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
     XAudioInitializeSystem();
 
