@@ -409,6 +409,8 @@ uint32_t XGetVolumeInformationA(
     }
 }
 
+
+
 std::filesystem::path FileSystem::ResolvePath(const std::string_view& path, bool checkForMods)
 {
     //if (checkForMods)
@@ -744,6 +746,11 @@ GUEST_FUNCTION_HOOK(sub_82CC7938, XSetFilePointer);
 //GUEST_FUNCTION_HOOK(sub_8272EF10, XSetFilePointerEx);
 GUEST_FUNCTION_HOOK(sub_82CC6FB8, XWriteFile);
 GUEST_FUNCTION_HOOK(sub_82CC2F10, XGetVolumeInformationA);
+
+// XGetFilePhysicalSortKey is used to measure where files are located on disc to load them in an optimal order.
+// for now just return 0.
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, XGetFilePhysicalSortKey, (FileHandle* hFile), 0);
+GUEST_FUNCTION_HOOK(sub_82CC7BB8, XGetFilePhysicalSortKey);
 
 // XMountUtilityDrive
 GUEST_FUNCTION_STUB(sub_8248CB00);
