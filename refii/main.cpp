@@ -108,6 +108,7 @@ void PrintAVXUnsupported()
 }
 
 __attribute__((constructor(101), target("no-avx,no-avx2"), noinline))
+
 void init()
 {
 #ifdef __x86_64__
@@ -118,6 +119,59 @@ void init()
     {
         PrintAVXUnsupported();  // now legal
     }
+#endif
+}
+
+static std::filesystem::path GetProjectRoot()
+{
+    static const std::filesystem::path rootPath = []() -> std::filesystem::path {
+#if defined(__linux__)
+        char exePath[PATH_MAX] = {};
+        ssize_t len = ::readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+        if (len > 0 && len < PATH_MAX) {
+            exePath[len] = '\0';
+            std::filesystem::path exeDir = std::filesystem::path(exePath).parent_path();
+
+            while (!exeDir.empty()) {
+                if (exeDir.filename() == "Git") {
+                    return exeDir;
+                }
+
+                std::filesystem::path parent = exeDir.parent_path();
+                if (parent == exeDir) // reached root
+                    break;
+                exeDir = std::move(parent);
+            }
+        }
+#endif
+        // fallback
+        return std::filesystem::current_path();
+    }();
+
+    return rootPath;
+}
+
+static std::filesystem::path MapVirtualPath(const std::filesystem::path& virtualPath)
+{
+#ifdef _WIN32
+    return virtualPath;
+#else
+    std::string pathStr = virtualPath.string();
+
+    // Handle Windows-style path prefixes
+    if (pathStr.starts_with("P:\\")) {
+        pathStr = pathStr.substr(3); // remove "P:\\"
+    } else if (pathStr.starts_with("P:/")) {
+        pathStr = pathStr.substr(3); // remove "P:/"
+    }
+
+    // Convert any remaining backslashes to forward slashes
+    std::replace(pathStr.begin(), pathStr.end(), '\\', '/');
+
+    // Use auto-detected root path
+    auto fullPath = GetProjectRoot() / pathStr;
+
+    return std::filesystem::weakly_canonical(fullPath); // normalize path
 #endif
 }
 
@@ -145,7 +199,8 @@ int main(int argc, char *argv[])
     const char *sdlVideoDriver = nullptr;
 
     // bootleg paths
-    std::filesystem::path refiiBinPath = "P:\\x360\\refii-game\\bin";
+    std::filesystem::path exePath = os::process::GetExecutablePath();
+    std::filesystem::path modulePath = exePath.parent_path() / "default.xex";
 
     if (!useDefaultWorkingDirectory)
     {
@@ -178,7 +233,6 @@ int main(int argc, char *argv[])
 
     hid::Init();
 
-    std::filesystem::path modulePath = refiiBinPath.append("default.xex");
     bool isGameInstalled = true;// Installer::checkGameInstall(GAME_INSTALL_DIRECTORY, modulePath);
     bool runInstallerWizard = forceInstaller || forceDLCInstaller || !isGameInstalled;
     //if (runInstallerWizard)
@@ -210,9 +264,11 @@ int main(int argc, char *argv[])
 
     const auto gameContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
     const auto cacheContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "Cache");
+    const auto updateContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "update");
 
-    refii::kernel::XamRegisterContent(gameContent, "P:/x360/refii-game/game");
-    refii::kernel::XamRegisterContent(cacheContent, "P:/x360/refii-game/cache");
+    refii::kernel::XamRegisterContent(gameContent, MapVirtualPath("P:/x360/refii-game/game").string());
+    refii::kernel::XamRegisterContent(cacheContent, MapVirtualPath("P:/x360/refii-game/cache").string());
+    refii::kernel::XamRegisterContent(updateContent, MapVirtualPath("P:/x360/refii-game/update").string());
 
     // Mount game
     refii::kernel::XamContentCreateEx(0, "game", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
@@ -222,6 +278,9 @@ int main(int argc, char *argv[])
 
     // Mount cache
     refii::kernel::XamContentCreateEx(0, "cache", &cacheContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
+
+    // Mount update
+    refii::kernel::XamContentCreateEx(0, "update", &updateContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
 
     //XAudioInitializeSystem();
