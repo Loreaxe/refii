@@ -96,6 +96,8 @@ FileHandle* XCreateFileA
     uint32_t dwFlagsAndAttributes
 )
 {
+    LOGF_UTILITY("lpFileName: {}, dwDesiredAccess: 0x{:X}, dwShareMode: 0x{:X}, lpSecurityAttributes: {}, dwCreationDisposition: 0x{:X}, dwFlagsAndAttributes: 0x{:X}",
+        lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes);
     assert(((dwDesiredAccess & ~(GENERIC_READ | GENERIC_WRITE | FILE_READ_DATA)) == 0) && "Unknown desired access bits.");
     assert(((dwShareMode & ~(FILE_SHARE_READ | FILE_SHARE_WRITE)) == 0) && "Unknown share mode bits.");
     assert(((dwCreationDisposition & ~(CREATE_NEW | CREATE_ALWAYS)) == 0) && "Unknown creation disposition bits.");
@@ -319,6 +321,8 @@ uint32_t XFindNextFileA(FindHandle* Handle, WIN32_FIND_DATAA* lpFindFileData)
 
 uint32_t XReadFileEx(FileHandle* hFile, void* lpBuffer, uint32_t nNumberOfBytesToRead, XOVERLAPPED* lpOverlapped, uint32_t lpCompletionRoutine)
 {
+    LOGF_UTILITY("hFile=0x{:X}, lpBuffer=0x{:X}, nNumberOfBytesToRead={}, lpOverlapped=0x{:X}, lpCompletionRoutine=0x{:X}",
+        (uintptr_t)hFile, (uintptr_t)lpBuffer, nNumberOfBytesToRead, (uintptr_t)lpOverlapped, (uintptr_t)lpCompletionRoutine);
     uint32_t result = FALSE;
     uint32_t numberOfBytesRead;
     std::streamoff streamOffset = lpOverlapped->Offset + (std::streamoff(lpOverlapped->OffsetHigh.get()) << 32U);
@@ -345,6 +349,7 @@ uint32_t XReadFileEx(FileHandle* hFile, void* lpBuffer, uint32_t nNumberOfBytesT
 
 uint32_t XGetFileAttributesA(const char* lpFileName)
 {
+    LOGF_UTILITY("lpFileName=\"{}\"", lpFileName ? lpFileName : "(null)");
     std::filesystem::path filePath = FileSystem::ResolvePath(lpFileName, true);
     if (std::filesystem::is_directory(filePath))
         return FILE_ATTRIBUTE_DIRECTORY;
@@ -380,6 +385,8 @@ uint32_t XGetVolumeInformationA(
 )
 
 {
+    LOGF_UTILITY("lpRootPathName=\"{}\"",
+        lpRootPathName ? lpRootPathName : "(null)");
     uint32_t lastErr = 0;
     auto resolvedPath = FileSystem::ResolvePath(lpRootPathName, false);
     if (resolvedPath.empty()) {
@@ -578,14 +585,12 @@ CFileHandle* __fsopen(const char* filename, const char* mode, int shflag)
 }
 int __fsclose(CFileHandle* stream)
 {
-    LOGF_UTILITY("stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
-
     if (refii::kernel::IsInvalidKernelObject(stream))
     {
         GuestThread::SetLastError(ERROR_INVALID_HANDLE);
         return -1;
     }
-
+    LOGF_UTILITY("stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
     stream->stream.close();
     refii::kernel::DestroyKernelObject(stream);
 
@@ -602,14 +607,25 @@ int ___fclose(CFileHandle* stream)
 }
 size_t __fread(void* buffer, size_t size, size_t count, CFileHandle* stream)
 {
+
     if (refii::kernel::IsInvalidKernelObject(stream) || !buffer)
+    {
+        LOGF_ERROR("Invalid stream or buffer: stream=0x{:x}, buffer=0x{:x}", 
+            refii::kernel::GetKernelHandle(stream), reinterpret_cast<uintptr_t>(buffer));
         return 0;
+    }
+
+    LOGF_UTILITY("buffer=0x{:x}, size={}, count={}, stream=0x{:x}",
+        reinterpret_cast<uintptr_t>(buffer), size, count, refii::kernel::GetKernelHandle(stream));
 
     size_t totalBytes = size * count;
     stream->stream.read(static_cast<char*>(buffer), totalBytes);
 
     if (stream->stream.bad())
+    {
+        LOGF_ERROR("Failed to read from stream: stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
         return 0;
+    }
 
     size_t bytesRead = stream->stream.gcount();
     return bytesRead / size;
@@ -617,20 +633,37 @@ size_t __fread(void* buffer, size_t size, size_t count, CFileHandle* stream)
 size_t __fwrite(const void* buffer, size_t size, size_t count, CFileHandle* stream)
 {
     if (refii::kernel::IsInvalidKernelObject(stream) || !buffer)
+    {
+        LOGF_ERROR("Invalid stream or buffer: stream=0x{:x}, buffer=0x{:x}", 
+            refii::kernel::GetKernelHandle(stream), reinterpret_cast<uintptr_t>(buffer));
         return 0;
+    }
+
+    LOGF_UTILITY("buffer=0x{:x}, size={}, count={}, stream=0x{:x}",
+        reinterpret_cast<uintptr_t>(buffer), size, count, refii::kernel::GetKernelHandle(stream));
 
     size_t totalBytes = size * count;
     stream->stream.write(static_cast<const char*>(buffer), totalBytes);
 
     if (stream->stream.bad())
+    {
+        LOGF_ERROR("Failed to write to stream: stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
         return 0;
+    }
 
     return count;
 }
 int __fseek(CFileHandle* stream, long offset, int origin)
 {
+
     if (refii::kernel::IsInvalidKernelObject(stream))
+    {
+        LOGF_ERROR("Invalid stream: stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
         return -1;
+    }
+
+    LOGF_UTILITY("stream=0x{:x}, offset={}, origin={}",
+        refii::kernel::GetKernelHandle(stream), offset, origin);
 
     std::ios::seekdir seekDir;
     switch (origin)
@@ -656,29 +689,47 @@ int __fseek(CFileHandle* stream, long offset, int origin)
 long __ftell(CFileHandle* stream)
 {
     if (refii::kernel::IsInvalidKernelObject(stream))
+    {
+        LOGF_ERROR("Invalid stream: stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
         return -1;
-
+    }
+    LOGF_UTILITY("stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
     std::streampos pos = stream->stream.tellg();
     return static_cast<long>(pos);
 }
 int __feof(CFileHandle* stream)
 {
     if (refii::kernel::IsInvalidKernelObject(stream))
-        return 1;
-
+    {
+        LOGF_ERROR("Invalid stream: stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
+        return -1;
+    }
+    LOGF_UTILITY("stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
     return stream->stream.eof() ? 1 : 0;
 }
 int __ferror(CFileHandle* stream)
 {
+    LOGF_UTILITY("stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
     if (refii::kernel::IsInvalidKernelObject(stream))
+    {
+        LOGF_ERROR("Invalid stream: stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
         return 1;
+    }
 
     return (stream->stream.bad() || stream->stream.fail()) ? 1 : 0;
 }
 void __clearerr(CFileHandle* stream)
 {
+   
     if (!refii::kernel::IsInvalidKernelObject(stream))
+    {
+        LOGF_UTILITY("stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
         stream->stream.clear();
+    }
+    else
+    {
+        LOGF_ERROR("Invalid stream: stream=0x{:x}", refii::kernel::GetKernelHandle(stream));
+    }
 }
 
 GUEST_FUNCTION_HOOK(sub_82CC3490, XCreateFileA);
@@ -703,9 +754,9 @@ GUEST_FUNCTION_HOOK(sub_82CAA910, __fsopen);
 GUEST_FUNCTION_HOOK(sub_82CC5E50, __fsclose);
 GUEST_FUNCTION_HOOK(sub_82CAABE8, ___fclose);
 GUEST_FUNCTION_HOOK(sub_82CB1B90, __fread);
-//GUEST_FUNCTION_HOOK(sub_, fwrite);
-//GUEST_FUNCTION_HOOK(sub_, fseek);
-//GUEST_FUNCTION_HOOK(sub_, ftell);
-//GUEST_FUNCTION_HOOK(sub_, feof);
-//GUEST_FUNCTION_HOOK(sub_, ferror);
-//GUEST_FUNCTION_HOOK(sub_, clearerr);
+GUEST_FUNCTION_HOOK(sub_82CAAF70, __fwrite);
+GUEST_FUNCTION_HOOK(sub_82CAB548, __fseek);
+GUEST_FUNCTION_HOOK(sub_82CAB880, __ftell);
+GUEST_FUNCTION_HOOK(sub_83007E80, __feof);
+GUEST_FUNCTION_HOOK(sub_83007ED8, __ferror);
+GUEST_FUNCTION_HOOK(sub_83008158, __clearerr);

@@ -1,12 +1,11 @@
 #include <stdafx.h>
 #include <kernel/function.h>
 #include <kernel/kernel.h>
+#include <kernel/io/file_system.h>
 #include <kernel/xam.h>
 #include <apu/audio.h>
-#include <gpu/video.h>
-#include <os/logger.h>
 
-GUEST_FUNCTION_HOOK(__imp__XGetVideoMode, refii::kernel::VdQueryVideoMode); // XGetVideoMode
+GUEST_FUNCTION_HOOK(__imp__XGetVideoMode, refii::kernel::VdQueryVideoMode);
 GUEST_FUNCTION_HOOK(__imp__XNotifyGetNext, refii::kernel::XNotifyGetNext);
 GUEST_FUNCTION_HOOK(__imp__XGetGameRegion, refii::kernel::XGetGameRegion);
 GUEST_FUNCTION_HOOK(__imp__XMsgStartIORequest, refii::kernel::XMsgStartIORequest);
@@ -229,20 +228,6 @@ GUEST_FUNCTION_HOOK(__imp__IoDismountVolumeByName, refii::kernel::IoDismountVolu
 GUEST_FUNCTION_HOOK(__imp__IoSynchronousDeviceIoControlRequest, refii::kernel::IoSynchronousDeviceIoControlRequest);
 GUEST_FUNCTION_HOOK(__imp__ObOpenObjectByName, refii::kernel::ObOpenObjectByName);
 GUEST_FUNCTION_HOOK(__imp__ObReferenceObjectByName, refii::kernel::ObReferenceObjectByName);
-
-GUEST_FUNCTION_HOOK(sub_822387B8, refii::kernel::RtlAllocateHeap);
-GUEST_FUNCTION_HOOK(sub_82239490, refii::kernel::RtlFreeHeap);
-GUEST_FUNCTION_HOOK(sub_82CC62E0, refii::kernel::RtlReAllocateHeap);
-GUEST_FUNCTION_HOOK(sub_82239808, refii::kernel::RtlSizeHeap);
-GUEST_FUNCTION_HOOK(sub_822386D0, refii::kernel::XAllocMem);
-GUEST_FUNCTION_HOOK(sub_822398B0, refii::kernel::XFreeMem);
-GUEST_FUNCTION_HOOK(sub_82CC74F8, refii::kernel::VirtualAlloc);
-GUEST_FUNCTION_HOOK(sub_82CC7548, refii::kernel::VirtualFree);
-// native memory operations
-GUEST_FUNCTION_HOOK(sub_82CB0B30, memmove);
-GUEST_FUNCTION_HOOK(sub_826BF770, memcpy);
-GUEST_FUNCTION_HOOK(sub_826BFCF0, memset);
-
 GUEST_FUNCTION_HOOK(__imp__MmSetAddressProtect, refii::kernel::MmSetAddressProtect);
 GUEST_FUNCTION_HOOK(__imp__NtProtectVirtualMemory, refii::kernel::NtProtectVirtualMemory);
 GUEST_FUNCTION_HOOK(__imp__NtQueueApcThread, refii::kernel::NtQueueApcThread);
@@ -296,133 +281,3 @@ GUEST_FUNCTION_HOOK(__imp__NetDll_XNetXnAddrToMachineId, refii::kernel::NetDll_X
 GUEST_FUNCTION_HOOK(__imp__XNetLogonGetTitleID, refii::kernel::XNetLogonGetTitleID);
 GUEST_FUNCTION_HOOK(__imp__NetDll_XNetQosListen, refii::kernel::NetDll_XNetQosListen);
 GUEST_FUNCTION_HOOK(__imp__NetDll_XNetQosRelease, refii::kernel::NetDll_XNetQosRelease);
-
-
-
-// stubs
-GUEST_FUNCTION_STUB(sub_82CC5D38); // HeapCreate
-GUEST_FUNCTION_STUB(sub_82CC6C40); // HeapDestroy
-GUEST_FUNCTION_STUB(__imp__vsprintf);
-GUEST_FUNCTION_STUB(__imp___vsnprintf);
-GUEST_FUNCTION_STUB(__imp__sprintf);
-GUEST_FUNCTION_STUB(__imp___snprintf);
-GUEST_FUNCTION_STUB(__imp___snwprintf);
-GUEST_FUNCTION_STUB(__imp__vswprintf);
-GUEST_FUNCTION_STUB(__imp___vscwprintf);
-GUEST_FUNCTION_STUB(__imp__swprintf);
-
-
-
-//#define GUEST__Direct3D_CreateDevice sub_8246B710
-//#define GUEST__D3DDevice_SetRenderTarget sub_82473D78
-//#define GUEST__D3DDevice_CreateSurface sub_8246D540
-//#define GUEST__D3DDevice_SetDepthStencilSurface sub_824740A8
-//#define GUEST__D3DSurface_GetDesc sub_8246D668
-//#define GUEST__D3DDevice_CreateTexture sub_8246D420
-//#define GUEST__D3DDevice_SetTexture sub_8246D788
-//#define GUEST__LockTextureRect sub_8246D408
-//#define GUEST__D3DDevice_CreatePixelShader sub_8247D840
-//#define GUEST__D3DDevice_SetPixelShader sub_8247BF68
-//#define GUEST__D3DDevice_CreateIndexBuffer sub_82481310
-//#define GUEST__D3DIndexBuffer_Lock sub_824813C0
-//#define GUEST__D3DIndexBuffer_Unlock sub_82481420
-//#define GUEST__D3DDevice_CreateVertexShader sub_8247D938
-//#define GUEST__D3DDevice_CreateVertexBuffer sub_824811D8
-//#define GUEST__D3DVertexBuffer_Lock sub_824812A0
-//#define GUEST__D3DVertexBuffer_Unlock sub_82481300
-//#define GUEST__D3DDevice_SetVertexShader sub_8247C228
-//#define GUEST__UnlockTextureRect sub_8246B870
-//#define GUEST__D3D_DestroyResource sub_82480B68
-//#define GUEST__D3DXFillTexture
-//#define GUEST__D3DXFillVolumeTexture
-//#define GUEST__D3DDevice_SetStreamSource sub_82473838
-//#define GUEST__D3DDevice_SetScissorRect sub_82473548
-//#define GUEST__D3DDevice_DrawIndexedVertices sub_82490030
-//#define GUEST__D3DDevice_DrawVertices sub_8248FC28
-//#define GUEST__D3DDevice_SetVertexDeclaration sub_8247C3F8
-//#define GUEST__D3DDevice_SetIndices sub_82473960
-//#define GUEST__D3DDevice_Resolve sub_82478FE8
-//#define GUEST__D3DDevice_Clear sub_82489F40
-//#define GUEST__D3DDevice_SetViewport sub_8215D508
-//#define GUEST__D3DIndexBuffer_GetDesc
-//#define GUEST__D3DVertexBuffer_GetDesc
-//#define GUEST__D3DXFilterTexture sub_82495F10
-//#define GUEST__D3DDevice_Present sub_82273858
-//#define GUEST__D3DDevice_SetResolution sub_824E39C8
-//#define GUEST__D3DDevice_DrawVerticesUP sub_8248FBC8
-//#define GUEST__D3DDevice_AcquireThreadOwnership sub_8246B5A8
-//#define GUEST__D3DDevice_ReleaseThreadOwnership sub_8246B5E8
-//#define GUEST__D3DDevice_Release sub_8246B4E0
-//#define GUEST__XGGetTextureDesc sub_82576868
-//#define GUEST__D3DDevice_SetPrediction sub_8248A000
-//#define GUEST__D3DDevice_SetShaderGPRAllocation sub_8247C4F8
-//#define GUEST__D3DDevice_CreateVertexDeclaration sub_8247C418
-//#define GUEST__D3DXCompileShaderEx sub_82497FF8
-//#define GUEST__hcgVertexShaderCreateByHlsl sub_82286630
-//#define GUEST__hcgPixelShaderCreateByHlsl sub_82286770
-//#define GUEST__D3DDevice_SetGammaRamp sub_82473A78
-//
-//GUEST_FUNCTION_HOOK(GUEST__hcgVertexShaderCreateByHlsl, refii::gpu::CreateMovieVertexShader);
-//GUEST_FUNCTION_HOOK(GUEST__hcgPixelShaderCreateByHlsl, refii::gpu::CreateMoviePixelShader);
-//
-//
-//GUEST_FUNCTION_HOOK(GUEST__Direct3D_CreateDevice, refii::gpu::CreateDevice);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetRenderTarget, refii::gpu::SetRenderTarget);
-//GUEST_FUNCTION_HOOK(GUEST__D3D_DestroyResource, refii::gpu::DestructResource);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetStreamSource, refii::gpu::SetStreamSource);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetViewport, refii::gpu::SetViewport);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_Clear, refii::gpu::Clear);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_Present, Video::Present);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetResolution, refii::gpu::SetResolution);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_CreateSurface, refii::gpu::CreateSurface);
-//GUEST_FUNCTION_HOOK(GUEST__D3DSurface_GetDesc, refii::gpu::GetSurfaceDesc);
-//
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetDepthStencilSurface, refii::gpu::SetDepthStencilSurface);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_CreateTexture, refii::gpu::CreateTexture);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetTexture, refii::gpu::SetTexture);
-//GUEST_FUNCTION_HOOK(GUEST__LockTextureRect, refii::gpu::LockTextureRect);
-//GUEST_FUNCTION_HOOK(GUEST__UnlockTextureRect, refii::gpu::UnlockTextureRect);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetScissorRect, refii::gpu::SetScissorRect);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_Resolve, refii::gpu::StretchRect);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetIndices, refii::gpu::SetIndices);
-//
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_CreatePixelShader, refii::gpu::CreatePixelShader);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetPixelShader, refii::gpu::SetPixelShader);
-//
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_CreateIndexBuffer, refii::gpu::CreateIndexBuffer);
-//GUEST_FUNCTION_HOOK(GUEST__D3DIndexBuffer_Lock, refii::gpu::LockIndexBuffer);
-//GUEST_FUNCTION_HOOK(GUEST__D3DIndexBuffer_Unlock, refii::gpu::UnlockIndexBuffer);
-////GUEST_FUNCTION_HOOK(GUEST__D3DIndexBuffer_GetDesc, refii::gpu::GetIndexBufferDesc);
-//
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_CreateVertexShader, refii::gpu::CreateVertexShader);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetVertexShader, refii::gpu::SetVertexShader);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_CreateVertexDeclaration, refii::gpu::CreateVertexDeclaration);
-////GUEST_FUNCTION_HOOK(, refii::gpu::GetVertexDeclaration);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_SetVertexDeclaration, refii::gpu::SetVertexDeclaration);
-////GUEST_FUNCTION_HOOK(, refii::gpu::HashVertexDeclaration);
-//
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_CreateVertexBuffer, refii::gpu::CreateVertexBuffer);
-//GUEST_FUNCTION_HOOK(GUEST__D3DVertexBuffer_Lock, refii::gpu::LockVertexBuffer);
-//GUEST_FUNCTION_HOOK(GUEST__D3DVertexBuffer_Unlock, refii::gpu::UnlockVertexBuffer);
-////GUEST_FUNCTION_HOOK(, refii::gpu::GetVertexBufferDesc);
-//
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_DrawIndexedVertices, refii::gpu::DrawIndexedPrimitive);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_DrawVertices, refii::gpu::DrawPrimitive);
-//GUEST_FUNCTION_HOOK(GUEST__D3DDevice_DrawVerticesUP, refii::gpu::DrawPrimitiveUP);
-//
-////GUEST_FUNCTION_HOOK(GUEST__D3DXFillTexture, refii::gpu::D3DXFillTexture);
-////GUEST_FUNCTION_HOOK(GUEST__D3DXFillVolumeTexture, refii::gpu::D3DXFillVolumeTexture);
-//
-//
-//GUEST_FUNCTION_STUB(sub_8246EEB8); // D3D::D3DDevice_BlockUntilIdle
-//GUEST_FUNCTION_STUB(GUEST__D3DDevice_AcquireThreadOwnership);
-//GUEST_FUNCTION_STUB(GUEST__D3DDevice_ReleaseThreadOwnership);
-//GUEST_FUNCTION_STUB(GUEST__D3DDevice_SetGammaRamp); // SetGammaRamp
-//GUEST_FUNCTION_STUB(GUEST__D3DDevice_SetShaderGPRAllocation);
-//GUEST_FUNCTION_STUB(GUEST__D3DXCompileShaderEx);
-//GUEST_FUNCTION_STUB(GUEST__D3DDevice_SetPrediction); // D3DDevice_SetPredication
-//GUEST_FUNCTION_STUB(GUEST__D3DXFilterTexture); // D3DXFilterTexture
-//GUEST_FUNCTION_STUB(GUEST__D3DDevice_Release); // D3DDevice_Release
-//GUEST_FUNCTION_STUB(sub_82466ED8);
-
-

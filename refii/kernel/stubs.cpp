@@ -1,5 +1,5 @@
 #include <stdafx.h>
-#include "kernel.h"
+#include <kernel/kernel.h>
 
 
 // Non-critical stub functions
@@ -34,9 +34,16 @@ DECLARE_STUB_FUNCTION_VOID(refii::kernel::KeLockL2, ())
 DECLARE_STUB_FUNCTION_VOID(refii::kernel::KeQueryBasePriorityThread, ())
 DECLARE_STUB_FUNCTION_VOID(refii::kernel::KeUnlockL2, ())
 
+// Ki*
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::KiApcNormalRoutineNop, (), 0)
+
 // Mm*
 DECLARE_STUB_FUNCTION_VOID(refii::kernel::MmQueryAllocationSize, ())
 DECLARE_STUB_FUNCTION_VOID(refii::kernel::MmQueryStatistics, ())
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::MmSetAddressProtect, (uint32_t guestAddress, uint32_t size, uint32_t protect), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::MmQueryAddressProtect, (uint32_t guestAddress), PAGE_READWRITE)
+
+
 
 // NetDll_*
 DECLARE_STUB_FUNCTION_VOID(refii::kernel::NetDll_WSAStartup, ())
@@ -151,3 +158,7 @@ DECLARE_STUB_FUNCTION_VOID(refii::kernel::XexGetProcedureAddress, ())
 DECLARE_STUB_FUNCTION_VOID(refii::kernel::XexGetModuleSection, ())
 DECLARE_STUB_FUNCTION_VOID(refii::kernel::XexLoadImageHeaders, ())
 DECLARE_STUB_FUNCTION_VOID(refii::kernel::XexGetModuleHandle, ())
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XSetThreadProcessor, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XMsgStartIORequest, (uint32_t App, uint32_t Message, XXOVERLAPPED* lpOverlapped, void* Buffer, uint32_t szBuffer), STATUS_SUCCESS)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XGetAVPack, (), 0)
+DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::XexCheckExecutablePrivilege, (), 0)

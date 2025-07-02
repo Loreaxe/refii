@@ -352,4 +352,7 @@ T GuestToHostFunction(const TFunction& func, TArgs&&... argv)
     PPC_FUNC(subroutine) { HostToGuestFunction<function>(ctx, base); }
 
 #define GUEST_FUNCTION_STUB(subroutine) \
-    PPC_FUNC(subroutine) { }
+    PPC_FUNC(subroutine) { LOG_UTILITY("===STUB==="); }
+
+#define GUEST_FUNCTION_ALIAS_STUB(subroutine, alias) \
+    PPC_FUNC(subroutine) { LOGF_UTILITY("==={} STUB===", alias); }

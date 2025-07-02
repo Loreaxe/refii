@@ -148,28 +148,6 @@ void GuestThread::SetThreadName(uint32_t threadId, const char* name)
 }
 #endif
 
-void SetThreadNameImpl(uint32_t* name)
-{
-#ifdef _WIN32
-    GuestThread::SetThreadName(0xFFFFFFFF, (const char*)name);
-#endif
-}
 
-int GetThreadPriorityImpl(GuestThreadHandle* hThread)
-{
-#ifdef _WIN32
-    return GetThreadPriority(hThread == refii::kernel::GetKernelObject(CURRENT_THREAD_HANDLE) ? GetCurrentThread() : hThread->thread.native_handle());
-#else 
-    return 0;
-#endif
-}
 
-uint32_t SetThreadIdealProcessorImpl(GuestThreadHandle* hThread, uint32_t dwIdealProcessor)
-{
-    return 0;
-}
-
-GUEST_FUNCTION_HOOK(sub_82B3DAE8, SetThreadNameImpl);
-//GUEST_FUNCTION_HOOK(sub_82466E00, GetThreadPriorityImpl);
-GUEST_FUNCTION_HOOK(sub_82CC2670, SetThreadIdealProcessorImpl);
 

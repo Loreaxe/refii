@@ -265,11 +265,6 @@ void refii::kernel::KeAcquireSpinLockAtRaisedIrql(uint32_t* spinLock)
     }
 }
 
-uint32_t refii::kernel::KiApcNormalRoutineNop()
-{
-    return 0;
-}
-
 uint32_t refii::kernel::XAudioGetVoiceCategoryVolumeChangeMask(uint32_t Driver, be<uint32_t>* Mask)
 {
     *Mask = 0;
@@ -348,24 +343,9 @@ uint32_t refii::kernel::XGetGameRegion()
     return 0x03FF;
 }
 
-uint32_t refii::kernel::XMsgStartIORequest(uint32_t App, uint32_t Message, XXOVERLAPPED* lpOverlapped, void* Buffer, uint32_t szBuffer)
-{
-    return STATUS_SUCCESS;
-}
-
 uint32_t refii::kernel::XGetLanguage()
 {
     return (uint32_t)::Config::Language.Value;
-}
-
-uint32_t refii::kernel::XGetAVPack()
-{
-    return 0;
-}
-
-uint32_t refii::kernel::XexCheckExecutablePrivilege()
-{
-    return 0;
 }
 
 uint32_t refii::kernel::ExGetXConfigSetting(uint16_t Category, uint16_t Setting, void* Buffer, uint16_t SizeOfBuffer, be<uint32_t>* RequiredSize)
@@ -795,8 +775,8 @@ uint32_t refii::kernel::VirtualAlloc(uint32_t lpAddress, uint32_t dwSize, uint32
 
     if (dwSize == 0)
     {
-        LOGF_UTILITY("VirtualAlloc: Invalid size 0");
-        return 0;
+        LOGF_ERROR("Invalid size 0");
+        return -1;
     }
 
     // Convert VirtualAlloc flags to XAllocMem flags
@@ -823,47 +803,36 @@ uint32_t refii::kernel::VirtualAlloc(uint32_t lpAddress, uint32_t dwSize, uint32
     // Use existing working XAllocMem function
     uint32_t result = XAllocMem(dwSize, xallocFlags);
 
-    if (result != 0)
-    {
-        LOGF_UTILITY("VirtualAlloc: Success, allocated 0x{:x} bytes at 0x{:x}", dwSize, result);
-    }
-    else
-    {
-        LOGF_UTILITY("VirtualAlloc: Failed to allocate 0x{:x} bytes", dwSize);
-    }
+    if (result == 0)
+        LOGF_ERROR("Failed to allocate 0x{:x} bytes", dwSize);
 
     return result;
 }
 
 uint32_t refii::kernel::VirtualFree(uint32_t lpAddress, uint32_t dwSize, uint32_t dwFreeType)
 {
-    LOGF_UTILITY("VirtualFree: lpAddress=0x{:x}, dwSize=0x{:x}, dwFreeType=0x{:x}",
+    LOGF_UTILITY("lpAddress=0x{:x}, dwSize=0x{:x}, dwFreeType=0x{:x}",
         lpAddress, dwSize, dwFreeType);
 
     if (lpAddress == 0)
-    {
-        LOGF_UTILITY("VirtualFree: Invalid address 0");
-        return 0;
-    }
+        return ERROR_INVALID_ADDRESS;
 
     // For MEM_RELEASE, dwSize should be 0 (but we'll ignore it for simplicity)
     if (dwFreeType & MEM_RELEASE)
     {
         // Use existing working XFreeMem function
         XFreeMem(lpAddress, 0);
-        LOGF_UTILITY("VirtualFree: Released memory at 0x{:x}", lpAddress);
-        return 1;
+        return S_OK;
     }
     else if (dwFreeType & MEM_DECOMMIT)
     {
         // For emulation, just return success for decommit
-        LOGF_UTILITY("VirtualFree: Decommit at 0x{:x} (emulated)", lpAddress);
-        return 1;
+        return S_OK;
     }
     else
     {
-        LOGF_UTILITY("VirtualFree: Invalid free type 0x{:x}", dwFreeType);
-        return 0;
+        LOGF_ERROR("Invalid free type 0x{:x}", dwFreeType);
+        return S_FALSE;
     }
 }
 
@@ -878,16 +847,6 @@ uint32_t refii::kernel::MmAllocatePhysicalMemoryEx(uint32_t flags, uint32_t size
     LOGF_UTILITY("0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}", flags, size, protect, minAddress, maxAddress, alignment);
     return g_memory.MapVirtual(g_userHeap.AllocPhysical(size, alignment));
 }
-
-DECLARE_STUB_FUNCTION_RETURN(uint32_t, refii::kernel::MmSetAddressProtect, 
-    (uint32_t guestAddress,uint32_t size,uint32_t protect), 0)
-
-
-uint32_t refii::kernel::MmQueryAddressProtect(uint32_t guestAddress)
-{
-    return PAGE_READWRITE;
-}
-
 
 uint32_t refii::kernel::ExAllocatePool(uint32_t size)
 {
@@ -910,4 +869,50 @@ void refii::kernel::XamFree(uint32_t ptr)
 void* MmGetHostAddress(uint32_t ptr)
 {
     return refii::kernel::g_memory.Translate(ptr);
+}
+
+uint32_t refii::kernel::QueryPerformanceCounter(LARGE_INTEGER* lpPerformanceCount)
+{
+    lpPerformanceCount->QuadPart = ByteSwap(std::chrono::steady_clock::now().time_since_epoch().count());
+    return TRUE;
+}
+
+uint32_t refii::kernel::QueryPerformanceFrequency(LARGE_INTEGER* lpFrequency)
+{
+    constexpr auto Frequency = std::chrono::steady_clock::period::den / std::chrono::steady_clock::period::num;
+    lpFrequency->QuadPart = ByteSwap(Frequency);
+    return TRUE;
+}
+
+uint32_t refii::kernel::GetTickCount()
+{
+    return uint32_t(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+
+void refii::kernel::GlobalMemoryStatus(XLPMEMORYSTATUS lpMemoryStatus)
+{
+    lpMemoryStatus->dwLength = sizeof(XMEMORYSTATUS);
+    lpMemoryStatus->dwMemoryLoad = 0;
+    lpMemoryStatus->dwTotalPhys = 0x20000000;
+    lpMemoryStatus->dwAvailPhys = 0x20000000;
+    lpMemoryStatus->dwTotalPageFile = 0x20000000;
+    lpMemoryStatus->dwAvailPageFile = 0x20000000;
+    lpMemoryStatus->dwTotalVirtual = 0x20000000;
+    lpMemoryStatus->dwAvailVirtual = 0x20000000;
+}
+
+void refii::kernel::SetThreadName(uint32_t* name)
+{
+#ifdef _WIN32
+    GuestThread::SetThreadName(0xFFFFFFFF, (const char*)name);
+#endif
+}
+
+int refii::kernel::GetThreadPriority(GuestThreadHandle* hThread)
+{
+#ifdef _WIN32
+    return ::GetThreadPriority(hThread == refii::kernel::GetKernelObject(CURRENT_THREAD_HANDLE) ? GetCurrentThread() : hThread->thread.native_handle());
+#else 
+    return 0;
+#endif
 }
