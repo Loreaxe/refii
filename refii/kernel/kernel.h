@@ -253,18 +253,7 @@ namespace kernel {
 
 #pragma region Filesystem
     void NtOpenFile();
-    uint32_t NtCreateFile
-    (
-        be<uint32_t>* FileHandle,
-        uint32_t DesiredAccess,
-        XOBJECT_ATTRIBUTES* Attributes,
-        XIO_STATUS_BLOCK* IoStatusBlock,
-        uint64_t* AllocationSize,
-        uint32_t FileAttributes,
-        uint32_t ShareAccess,
-        uint32_t CreateDisposition,
-        uint32_t CreateOptions
-    );
+    uint32_t NtCreateFile();
     void NtWriteFile();
     void NtSetInformationFile();
     void NtQueryInformationFile();
@@ -279,8 +268,8 @@ namespace kernel {
 #pragma endregion
 
 #pragma region Memory
-    uint32_t NtAllocateVirtualMemory(uint32_t processHandle, be<uint32_t>* baseAddress, uint32_t zeroBits, be<uint32_t>* regionSize, uint32_t allocationType, uint32_t protect);
-    uint32_t NtFreeVirtualMemory(uint32_t processHandle, be<uint32_t>* baseAddress, be<uint32_t>* regionSize, uint32_t freeType);
+    uint32_t NtAllocateVirtualMemory();
+    uint32_t NtFreeVirtualMemory();
     void NtQueryVirtualMemory();
     uint32_t NtProtectVirtualMemory();
     uint32_t RtlAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t size);

@@ -251,8 +251,8 @@ int main(int argc, char *argv[])
 
     //ModLoader::Init();
 
-    if (!PersistentStorageManager::LoadBinary())
-        LOGFN_ERROR("Failed to load persistent storage binary... (status code {})", (int)PersistentStorageManager::BinStatus);
+    //if (!PersistentStorageManager::LoadBinary())
+    //    LOGFN_ERROR("Failed to load persistent storage binary... (status code {})", (int)PersistentStorageManager::BinStatus);
 
     if (refii::kernel::g_memory.base == nullptr)
     {

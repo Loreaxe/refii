@@ -369,6 +369,40 @@ uint32_t XWriteFile(FileHandle* hFile, const void* lpBuffer, uint32_t nNumberOfB
     return TRUE;
 }
 
+uint32_t XGetVolumeInformationA(
+    const char* lpRootPathName,
+    char* lpVolumeNameBuffer,
+    uint32_t nVolumeNameSize,
+    be<uint32_t>* lpVolumeSerialNumber,
+    be<uint32_t>* lpMaximumComponentLength,
+    be<uint32_t>* lpFileSystemFlags,
+    char* lpFileSystemNameBuffer,
+    uint32_t nFileSystemNameSize
+)
+
+{
+    uint32_t lastErr = 0;
+    auto resolvedPath = FileSystem::ResolvePath(lpRootPathName, false);
+    if (resolvedPath.empty()) {
+        GuestThread::SetLastError(ERROR_NOT_FOUND);
+        return TRUE;
+    } else {
+        if (lpVolumeNameBuffer)
+            strncpy(lpVolumeNameBuffer, "refii", nVolumeNameSize);
+
+        if (lpVolumeSerialNumber)
+            *lpVolumeSerialNumber = 0xdeadbeef;
+        if (lpMaximumComponentLength)
+            *lpMaximumComponentLength = 255;
+        if (lpFileSystemFlags)
+            *lpFileSystemFlags = 0;
+        if (lpFileSystemNameBuffer)
+            strncpy(lpFileSystemNameBuffer, "NTFS", nFileSystemNameSize);
+        GuestThread::SetLastError(ERROR_SUCCESS); // Success
+        return ERROR_SUCCESS;
+    }
+}
+
 std::filesystem::path FileSystem::ResolvePath(const std::string_view& path, bool checkForMods)
 {
     //if (checkForMods)
@@ -400,6 +434,12 @@ std::filesystem::path FileSystem::ResolvePath(const std::string_view& path, bool
         // We can fix it by redirecting it to update instead as we know the original
         // game files don't have a work folder.
         if (path.starts_with("game:\\work\\"))
+            root = "update";
+
+        // really ghetto way of handling the root path
+        if(root == "GAME")
+            root = "game";
+        else if (root == "UPDATE")
             root = "update";
 
         const auto newRoot = refii::kernel::XamGetRootPath(root);
@@ -653,6 +693,7 @@ GUEST_FUNCTION_HOOK(sub_82CC7DD0, XReadFileEx);
 GUEST_FUNCTION_HOOK(sub_82CC7938, XSetFilePointer);
 //GUEST_FUNCTION_HOOK(sub_8272EF10, XSetFilePointerEx);
 GUEST_FUNCTION_HOOK(sub_82CC6FB8, XWriteFile);
+GUEST_FUNCTION_HOOK(sub_82CC2F10, XGetVolumeInformationA);
 
 // XMountUtilityDrive
 GUEST_FUNCTION_STUB(sub_8248CB00);

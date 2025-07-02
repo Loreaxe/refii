@@ -58,6 +58,7 @@
     // ==================== Error Code Emulation ====================
     #define ERROR_INVALID_PARAMETER         0x00000057
     #define ERROR_INVALID_HANDLE            0x00000006
+    #define ERROR_NOT_FOUND                 0x00000490
 
     inline int GetLastError() {
         return errno;

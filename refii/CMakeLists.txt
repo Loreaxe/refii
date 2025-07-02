@@ -72,6 +72,7 @@ set(REFII_KERNEL_CXX_SOURCES
     "kernel/obj/event.cpp"
     "kernel/obj/mutant.cpp"
     "kernel/obj/semaphore.cpp"
+    "kernel/stubs.cpp"
 )
 
 set(REFII_LOCALE_CXX_SOURCES
@@ -106,7 +107,7 @@ set(REFII_GPU_CXX_SOURCES
     "gpu/imgui/imgui_common.cpp"
     "gpu/imgui/imgui_font_builder.cpp"
     "gpu/imgui/imgui_snapshot.cpp"
-    "gpu/rhi/plume_vulkan.cpp"
+#    "gpu/rhi/plume_vulkan.cpp"
 )
 
 if (UNLEASHED_RECOMP_D3D12)
@@ -411,7 +412,7 @@ set(RESOURCES_OUTPUT_PATH "${PROJECT_SOURCE_DIR}/res")
 ## Miscellaneous ##
 BIN2C(TARGET_OBJ refii SOURCE_FILE "${RESOURCES_SOURCE_PATH}/bc_diff/button_bc_diff.bin" DEST_FILE "${RESOURCES_OUTPUT_PATH}/bc_diff/button_bc_diff.bin" ARRAY_NAME "g_button_bc_diff" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ refii SOURCE_FILE "${RESOURCES_SOURCE_PATH}/font/im_font_atlas.bin" DEST_FILE "${RESOURCES_OUTPUT_PATH}/font/im_font_atlas.bin" ARRAY_NAME "g_im_font_atlas" COMPRESSION_TYPE "zstd")
-BIN2C(TARGET_OBJ refii SOURCE_FILE "${RESOURCES_SOURCE_PATH}/font/im_font_atlas.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/font/im_font_atlas.dds" ARRAY_NAME "g_im_font_atlas_texture" COMPRESSION_TYPE "zstd")
+BIN2C(TARGET_OBJ refii SOURCE_FILE "${RESOURCES_SOURCE_PATH}/font/im_font_atlas.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/font/im_font_atlas.dds" ARRAY_NAME "g_im_font_atlas_texture" COMPRESSION_TYPE "zstd") 
 BIN2C(TARGET_OBJ refii SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/controller.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/controller.dds" ARRAY_NAME "g_controller" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ refii SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/general_window.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/general_window.dds" ARRAY_NAME "g_general_window" COMPRESSION_TYPE "zstd")
 BIN2C(TARGET_OBJ refii SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/common/hedge-dev.dds" DEST_FILE "${RESOURCES_OUTPUT_PATH}/images/common/hedge-dev.dds" ARRAY_NAME "g_hedgedev" COMPRESSION_TYPE "zstd")
