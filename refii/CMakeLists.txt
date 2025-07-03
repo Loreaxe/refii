@@ -47,6 +47,8 @@ set(REFII_KERNEL_CXX_SOURCES
     "kernel/obj/semaphore.cpp"
     "kernel/stubs.cpp"
     "kernel/hooks.cpp"
+    "kernel/obj/heap_object.cpp"
+    "kernel/heap.cpp"
 )
 
 set(REFII_LOCALE_CXX_SOURCES

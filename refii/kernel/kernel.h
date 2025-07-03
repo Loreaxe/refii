@@ -10,6 +10,7 @@
 #include <kernel/obj/guest_memory.h>
 #include <kernel/obj/mutant.h>
 #include <kernel/obj/semaphore.h>
+#include <kernel/obj/heap_object.h>
 
 #include <kernel/net.h>
 #include <kernel/hal.h>
@@ -152,6 +153,9 @@ namespace kernel {
     uint32_t KeWaitForSingleObject(XDISPATCHER_HEADER* Object, uint32_t WaitReason, uint32_t WaitMode, bool Alertable, be<int64_t>* Timeout);
     uint32_t NtWaitForSingleObjectEx(uint32_t Handle, uint32_t WaitMode, uint32_t Alertable, be<int64_t>* Timeout);
 
+    uint32_t SleepEx(uint32_t dwMilliseconds, bool bAlertable);
+    uint32_t WaitForSingleObjectEx(uint32_t hHandle, uint32_t dwMilliseconds, bool bAlertable);
+
     static uint32_t& TlsGetValueRef(size_t index);
     uint32_t KeTlsGetValue(uint32_t dwTlsIndex);
     uint32_t KeTlsSetValue(uint32_t dwTlsIndex, uint32_t lpTlsValue);
@@ -164,6 +168,9 @@ namespace kernel {
     uint32_t RtlReAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer, uint32_t size);
     uint32_t RtlFreeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer);
     uint32_t RtlSizeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer);
+    uint32_t RtlCreateHeap(uint32_t flags, uint32_t heapBase, uint32_t reserveSize, uint32_t commitSize, uint32_t lock, void* heapParams);
+    uint32_t RtlDestroyHeap(uint32_t heapHandle);
+
     uint32_t XAllocMem(uint32_t size, uint32_t flags);
     void XFreeMem(uint32_t baseAddress, uint32_t flags);
     uint32_t VirtualAlloc(uint32_t lpAddress, uint32_t dwSize, uint32_t flAllocationType, uint32_t flProtect);

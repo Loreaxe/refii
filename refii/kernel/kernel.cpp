@@ -542,6 +542,33 @@ uint32_t refii::kernel::KeWaitForSingleObject(XDISPATCHER_HEADER* Object, uint32
     return STATUS_SUCCESS;
 }
 
+uint32_t refii::kernel::SleepEx(uint32_t dwMilliseconds, bool bAlertable)
+{
+    be<int64_t> timeout = -(int64_t)dwMilliseconds * 10000;
+    uint32_t status = refii::kernel::KeDelayExecutionThread(0, bAlertable, &timeout);
+
+    if (status == STATUS_USER_APC)
+        return WAIT_IO_COMPLETION;
+
+    return 0;
+}
+
+uint32_t refii::kernel::WaitForSingleObjectEx(uint32_t hHandle, uint32_t dwMilliseconds, bool bAlertable)
+{
+    be<int64_t> timeout = dwMilliseconds == INFINITE ? 0 : -(int64_t)dwMilliseconds * 10000;
+    uint32_t status = NtWaitForSingleObjectEx(hHandle, 0, bAlertable,
+        dwMilliseconds == INFINITE ? nullptr : &timeout);
+
+    if (status == STATUS_USER_APC)
+        return WAIT_IO_COMPLETION;
+    else if (status == STATUS_TIMEOUT)
+        return WAIT_TIMEOUT;
+    else if (status == STATUS_SUCCESS)
+        return WAIT_OBJECT_0;
+    else
+        return WAIT_FAILED;
+}
+
 uint32_t& refii::kernel::TlsGetValueRef(size_t index)
 {
     // Having this a global thread_local variable
@@ -604,7 +631,7 @@ uint32_t refii::kernel::NtWaitForSingleObjectEx(uint32_t Handle, uint32_t WaitMo
 
     if (IsKernelObject(Handle))
     {
-        return GetKernelObject(Handle)->Wait(timeout);
+         return GetKernelObject(Handle)->Wait(timeout);
     }
     else
     {
@@ -704,49 +731,6 @@ uint32_t refii::kernel::NtReleaseSemaphore(Semaphore* Handle, uint32_t ReleaseCo
         *PreviousCount = ByteSwap(previousCount);
 
     return STATUS_SUCCESS;
-}
-
-uint32_t refii::kernel::RtlAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t size)
-{
-    void* ptr = g_userHeap.Alloc(size);
-    if ((flags & 0x8) != 0)
-        memset(ptr, 0, size);
-
-    assert(ptr);
-    return g_memory.MapVirtual(ptr);
-}
-
-uint32_t refii::kernel::RtlReAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer, uint32_t size)
-{
-    void* ptr = g_userHeap.Alloc(size);
-    if ((flags & 0x8) != 0)
-        memset(ptr, 0, size);
-
-    if (memoryPointer != 0)
-    {
-        void* oldPtr = g_memory.Translate(memoryPointer);
-        memcpy(ptr, oldPtr, std::min<size_t>(size, g_userHeap.Size(oldPtr)));
-        g_userHeap.Free(oldPtr);
-    }
-
-    assert(ptr);
-    return g_memory.MapVirtual(ptr);
-}
-
-uint32_t refii::kernel::RtlFreeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer)
-{
-    if (memoryPointer != NULL)
-        g_userHeap.Free(g_memory.Translate(memoryPointer));
-
-    return true;
-}
-
-uint32_t refii::kernel::RtlSizeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer)
-{
-    if (memoryPointer != NULL)
-        return (uint32_t)g_userHeap.Size(g_memory.Translate(memoryPointer));
-
-    return 0;
 }
 
 uint32_t refii::kernel::XAllocMem(uint32_t size, uint32_t flags)
