@@ -52,14 +52,35 @@
 
     // ==================== Creation Disposition Constants ====================
     #define CREATE_NEW                      1
+    #define CREATE_ALWAYS                   2
+    #define OPEN_EXISTING                   3
     #define OPEN_ALWAYS                     4
     #define TRUNCATE_EXISTING               5
 
     // ==================== Error Code Emulation ====================
-    #define ERROR_INVALID_PARAMETER         0x00000057
+    #define ERROR_SUCCESS                   0x00000000
+    #define ERROR_INVALID_FUNCTION          0x00000001
+    #define ERROR_FILE_NOT_FOUND            0x00000002
+    #define ERROR_PATH_NOT_FOUND            0x00000003
+    #define ERROR_ACCESS_DENIED             0x00000005
     #define ERROR_INVALID_HANDLE            0x00000006
+    #define ERROR_NOT_ENOUGH_MEMORY         0x00000008
+    #define ERROR_INVALID_DATA              0x0000000D
+    #define ERROR_OUTOFMEMORY               0x0000000E
+    #define ERROR_INVALID_DRIVE             0x0000000F
+    #define ERROR_NO_MORE_FILES             0x00000012
+    #define ERROR_SHARING_VIOLATION         0x00000020
+    #define ERROR_LOCK_VIOLATION            0x00000021
+    #define ERROR_INVALID_PARAMETER         0x00000057
+    #define ERROR_INSUFFICIENT_BUFFER       0x0000007A
+    #define ERROR_BAD_ARGUMENTS             0x000000A0
+    #define ERROR_ALREADY_EXISTS            0x000000B7
+    #define ERROR_DEVICE_NOT_CONNECTED      0x0000048F
     #define ERROR_NOT_FOUND                 0x00000490
+    #define ERROR_DIRECTORY                 0x00000010
+    #define ERROR_NO_SUCH_USER              0x00000525
 
+    // ==================== Fallback GetLastError ====================
     inline int GetLastError() {
         return errno;
     }
@@ -68,23 +89,23 @@
 
 // ==================== Shared Constants (Cross-Platform) ====================
 
-constexpr uint32_t INFINITE                  = 0xFFFFFFFF;
-constexpr uint32_t STATUS_SUCCESS            = 0x00000000;
-constexpr uint32_t STATUS_TIMEOUT            = 0x00000102;
-constexpr uint32_t STATUS_WAIT_0             = 0x00000000;
-constexpr uint32_t S_OK                      = 0x00000000;
-constexpr uint32_t STATUS_USER_APC           = 0x000000C0;
-constexpr uint32_t STATUS_FAIL_CHECK         = 0xC000022D;
-constexpr uint32_t ERROR_SUCCESS             = 0x00000000;
-constexpr uint32_t ERROR_NO_SUCH_USER        = 0x00000525;
-constexpr uint32_t ERROR_NO_MORE_FILES       = 0x00000012;
-constexpr uint32_t ERROR_PATH_NOT_FOUND      = 0x00000003;
-constexpr uint32_t CREATE_ALWAYS             = 2;
-constexpr uint32_t OPEN_EXISTING             = 3;
-constexpr uint32_t STATUS_ABANDONED_WAIT_0   = 0x00000080;
-constexpr uint32_t STATUS_MUTANT_NOT_OWNED   = 0xC0000046;
-constexpr uint32_t ERROR_BAD_ARGUMENTS       = 0x000000A0;
-constexpr uint32_t ERROR_DEVICE_NOT_CONNECTED = 0x0000048F;
+constexpr uint32_t INFINITE                         = 0xFFFFFFFF;
+constexpr uint32_t S_OK                             = 0x00000000;
+constexpr uint32_t STATUS_SUCCESS                   = 0x00000000;
+constexpr uint32_t STATUS_TIMEOUT                   = 0x00000102;
+constexpr uint32_t STATUS_WAIT_0                    = 0x00000000;
+constexpr uint32_t STATUS_USER_APC                  = 0x000000C0;
+constexpr uint32_t STATUS_FAIL_CHECK                = 0xC000022D;
+constexpr uint32_t STATUS_ABANDONED_WAIT_0          = 0x00000080;
+constexpr uint32_t STATUS_MUTANT_NOT_OWNED          = 0xC0000046;
+constexpr uint32_t STATUS_PENDING                   = 0x00000103;
+constexpr uint32_t STATUS_NOT_IMPLEMENTED           = 0xC0000002;
+constexpr uint32_t STATUS_INVALID_PARAMETER         = 0xC000000D;
+constexpr uint32_t STATUS_ACCESS_DENIED             = 0xC0000022;
+constexpr uint32_t STATUS_OBJECT_NAME_NOT_FOUND     = 0xC0000034;
+constexpr uint32_t STATUS_OBJECT_PATH_NOT_FOUND     = 0xC000003A;
+constexpr uint32_t STATUS_NO_MEMORY                 = 0xC0000017;
+constexpr uint32_t STATUS_BUFFER_TOO_SMALL          = 0xC0000023;
 
 // ==================== Memory Protection Flags ====================
 
@@ -152,4 +173,3 @@ inline void kDebugTrap()
     // fallback: do nothing
 #endif
 }
-

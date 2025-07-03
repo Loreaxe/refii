@@ -15,6 +15,12 @@ constexpr size_t TOTAL_SIZE = PCR_SIZE + TLS_SIZE + TEB_SIZE + STACK_SIZE;
 
 constexpr size_t TEB_OFFSET = PCR_SIZE + TLS_SIZE;
 
+template<typename T>
+constexpr T AlignDown(T value, size_t alignment) {
+    static_assert(std::is_integral_v<T>, "AlignDown requires integral type");
+    return value & ~(static_cast<T>(alignment) - 1);
+}
+
 GuestThreadContext::GuestThreadContext(uint32_t cpuNumber)
 {
     assert(thread == nullptr);
@@ -29,7 +35,7 @@ GuestThreadContext::GuestThreadContext(uint32_t cpuNumber)
     *(uint32_t*)(thread + PCR_SIZE + 0x10) = 0xFFFFFFFF; // that one TLS entry that felt quirky
     *(uint32_t*)(thread + PCR_SIZE + TLS_SIZE + 0x14C) = ByteSwap(GuestThread::GetCurrentThreadId()); // thread id
 
-    ppcContext.r1.u64 = refii::kernel::g_memory.MapVirtual(thread + PCR_SIZE + TLS_SIZE + TEB_SIZE + STACK_SIZE); // stack pointer
+    ppcContext.r1.u64 = AlignDown(refii::kernel::g_memory.MapVirtual(thread + PCR_SIZE + TLS_SIZE + TEB_SIZE + STACK_SIZE), 16); // stack pointer
     ppcContext.r13.u64 = refii::kernel::g_memory.MapVirtual(thread);
     ppcContext.fpscr.loadFromHost();
 
@@ -173,4 +179,3 @@ uint32_t SetThreadIdealProcessorImpl(GuestThreadHandle* hThread, uint32_t dwIdea
 GUEST_FUNCTION_HOOK(sub_82B3DAE8, SetThreadNameImpl);
 //GUEST_FUNCTION_HOOK(sub_82466E00, GetThreadPriorityImpl);
 GUEST_FUNCTION_HOOK(sub_82CC2670, SetThreadIdealProcessorImpl);
-
