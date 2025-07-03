@@ -73,6 +73,9 @@ set(REFII_KERNEL_CXX_SOURCES
     "kernel/obj/mutant.cpp"
     "kernel/obj/semaphore.cpp"
     "kernel/stubs.cpp"
+    "kernel/hooks.cpp"
+    "kernel/obj/heap_object.cpp"
+    "kernel/heap.cpp"
 )
 
 set(REFII_LOCALE_CXX_SOURCES
@@ -211,7 +214,6 @@ set(REFII_CXX_SOURCES
     "app.cpp"
     "exports.cpp"
     "main.cpp"
-    "misc_impl.cpp"
     "preload_executable.cpp"
     "sdl_listener.cpp"
     "stdafx.cpp"

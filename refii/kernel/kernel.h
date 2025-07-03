@@ -1,7 +1,7 @@
 #pragma once
 
 #define GUEST_INVALID_HANDLE_VALUE 0xFFFFFFFF
-#define OBJECT_SIGNATURE           (uint32_t)'XBOX'
+#define OBJECT_SIGNATURE 0x58424F58 // 'X' 'B' 'O' 'X'
 
 #include <cpu/ppc_context.h>
 #include <cpu/guest_thread.h>
@@ -10,11 +10,13 @@
 #include <kernel/obj/guest_memory.h>
 #include <kernel/obj/mutant.h>
 #include <kernel/obj/semaphore.h>
+#include <kernel/obj/heap_object.h>
 
 #include <kernel/net.h>
 #include <kernel/hal.h>
 
 #include <os/logger.h>
+#include "platform_defs.h"
 
 namespace refii {
 namespace kernel {
@@ -88,113 +90,37 @@ namespace kernel {
     void KeQuerySystemTime(be<uint64_t>* time);
     uint32_t RaiseIrqlToDpcLevel();
     void KfLowerIrql();
-    uint32_t KiApcNormalRoutineNop();
-    void KeEnableFpuExceptions();
-
-    void DbgBreakPoint();
-    void TimeStampBundle();
-    void DebugMonitorData();
-    void CertMonitorData();
     void KeBugCheckEx();
     uint64_t KeQueryPerformanceFrequency();
     void KeBugCheck();
-
-    
     uint32_t XAudioGetVoiceCategoryVolumeChangeMask(uint32_t Driver, be<uint32_t>* Mask);
-
-    void XexGetProcedureAddress();
-    void XexGetModuleSection();
-    void RtlImageXexHeaderField();
-
-    void XNotifyPositionUI();
-    void XAudioGetVoiceCategoryVolume();
-
-    void RtlTimeFieldsToTime();
-
-    void vsprintf_x();
-    void DbgPrint();
-    void __C_specific_handler_x();
-    void RtlNtStatusToDosError();
-
-    void ObDereferenceObject();
     uint32_t ObReferenceObjectByHandle(uint32_t handle, uint32_t objectType, be<uint32_t>* object);
-
-    void RtlRaiseException_x();
-
-    void _snwprintf_x();
-    void _swprintf_x();
-    void _vscwprintf_x();
-    void _vsnprintf_x();
-    void _vswprintf_x();
-    void sprintf_x();
-
     uint32_t RtlUnicodeToMultiByteN(char* MultiByteString, uint32_t MaxBytesInMultiByteString, be<uint32_t>* BytesInMultiByteString, const be<uint16_t>* UnicodeString, uint32_t BytesInUnicodeString);
     uint32_t RtlMultiByteToUnicodeN(be<uint16_t>* UnicodeString, uint32_t MaxBytesInUnicodeString, be<uint32_t>* BytesInUnicodeString, const char* MultiByteString, uint32_t BytesInMultiByteString);
     void RtlInitAnsiString(XANSI_STRING* destination, char* source);
-
-    void ExRegisterTitleTerminateNotification();
-    void ObDeleteSymbolicLink();
-    void ObCreateSymbolicLink();
-
-    void XeCryptBnQwBeSigVerify();
-    void XeKeysGetKey();
-    void XeCryptRotSumSha();
-    void XeCryptSha();
-    void XeKeysConsolePrivateKeySign();
-    void XeKeysConsoleSignatureVerification();
-
-    void RtlCompareStringN();
-    void _snprintf_x();
-    void RtlTimeToTimeFields();
-    void RtlFreeAnsiString();
-    void RtlUnicodeStringToAnsiString();
-    void RtlInitUnicodeString();
-    void XexLoadImageHeaders();
-    void ObOpenObjectByName();
-    void ObReferenceObjectByName();
-    void RtlUpcaseUnicodeChar();
-
-    void ObIsTitleObject();
-
-    void ObReferenceObject();
-
-    void XMsgStartIORequestEx();
-
-    void XexGetModuleHandle();
-
+    uint32_t NtClose(uint32_t handle);
     uint32_t XMsgInProcessCall(uint32_t app, uint32_t message, be<uint32_t>* param1, be<uint32_t>* param2);
-
-    void XexExecutableModuleHandle();
-
-    void ExLoadedCommandLine();
-
     uint32_t XGetGameRegion();
-
-    uint32_t XMsgStartIORequest(uint32_t App, uint32_t Message, XXOVERLAPPED* lpOverlapped, void* Buffer, uint32_t szBuffer);
-
     uint32_t XGetLanguage();
-
-    uint32_t XGetAVPack();
-
-    uint32_t XexCheckExecutablePrivilege();
-
     uint32_t ExGetXConfigSetting(uint16_t Category, uint16_t Setting, void* Buffer, uint16_t SizeOfBuffer, be<uint32_t>* RequiredSize);
-
+    uint32_t QueryPerformanceCounter(LARGE_INTEGER* lpPerformanceCount);
+    uint32_t QueryPerformanceFrequency(LARGE_INTEGER* lpFrequency);
+    uint32_t GetTickCount();
 #pragma endregion
 
 #pragma region Threading
     uint32_t ExCreateThread(be<uint32_t>* handle, uint32_t stackSize, be<uint32_t>* threadId, uint32_t xApiThreadStartup, uint32_t startAddress, uint32_t startContext, uint32_t creationFlags);
-    void ExTerminateThread();
+    void SetThreadName(uint32_t* name);
+    int GetThreadPriority(GuestThreadHandle* hThread);
     uint32_t NtResumeThread(GuestThreadHandle* hThread, uint32_t* suspendCount);
     uint32_t NtSuspendThread(GuestThreadHandle* hThread, uint32_t* suspendCount);
     uint32_t NtYieldExecution();
     uint32_t KeDelayExecutionThread(uint32_t WaitMode, bool Alertable, be<int64_t>* Timeout);
     uint32_t KeResumeThread(GuestThreadHandle* object);
     void KeSetBasePriorityThread(GuestThreadHandle* hThread, int priority);
-    void KeQueryBasePriorityThread();
+
     uint32_t KeSetAffinityThread(uint32_t Thread, uint32_t Affinity, be<uint32_t>* lpPreviousAffinity);
     uint32_t KeGetCurrentProcessType();
-    void ExThreadObjectType();
 
     uint32_t NtReleaseSemaphore(Semaphore* Handle, uint32_t ReleaseCount, int32_t* PreviousCount);
     uint32_t KeReleaseSemaphore(XKSEMAPHORE* semaphore, uint32_t increment, uint32_t adjustment, uint32_t wait);
@@ -210,20 +136,11 @@ namespace kernel {
     void KeAcquireSpinLockAtRaisedIrql(uint32_t* spinLock);
     uint32_t KeTryToAcquireSpinLockAtRaisedIrql(uint32_t* spinLock);
 
-    void KeEnterCriticalRegion();
-    void KeLeaveCriticalRegion();
-
     void RtlLeaveCriticalSection(XRTL_CRITICAL_SECTION* cs);
     void RtlEnterCriticalSection(XRTL_CRITICAL_SECTION* cs);
     uint32_t RtlInitializeCriticalSection(XRTL_CRITICAL_SECTION* cs);
     bool RtlTryEnterCriticalSection(XRTL_CRITICAL_SECTION* cs);
     void RtlInitializeCriticalSectionAndSpinCount(XRTL_CRITICAL_SECTION* cs, uint32_t spinCount);
-
-    void RtlUnwind_x();
-    void RtlCaptureContext_x();
-
-    void KeLockL2();
-    void KeUnlockL2();
 
     bool KeSetEvent(XKEVENT* pEvent, uint32_t Increment, bool Wait);
     bool KeResetEvent(XKEVENT* pEvent);
@@ -233,16 +150,12 @@ namespace kernel {
     uint32_t NtClearEvent(Event* handle, uint32_t* previousState);
 
     uint32_t KeWaitForMultipleObjects(uint32_t Count, xpointer<XDISPATCHER_HEADER>* Objects, uint32_t WaitType, uint32_t WaitReason, uint32_t WaitMode, uint32_t Alertable, be<int64_t>* Timeout);
-    void NtWaitForMultipleObjectsEx();
 
     uint32_t KeWaitForSingleObject(XDISPATCHER_HEADER* Object, uint32_t WaitReason, uint32_t WaitMode, bool Alertable, be<int64_t>* Timeout);
     uint32_t NtWaitForSingleObjectEx(uint32_t Handle, uint32_t WaitMode, uint32_t Alertable, be<int64_t>* Timeout);
-    
-    void NtDuplicateObject();
 
-    void NtCancelTimer();
-    void NtCreateTimer();
-    void NtSetTimerEx();
+    uint32_t SleepEx(uint32_t dwMilliseconds, bool bAlertable);
+    uint32_t WaitForSingleObjectEx(uint32_t hHandle, uint32_t dwMilliseconds, bool bAlertable);
 
     static uint32_t& TlsGetValueRef(size_t index);
     uint32_t KeTlsGetValue(uint32_t dwTlsIndex);
@@ -251,7 +164,55 @@ namespace kernel {
     uint32_t KeTlsFree(uint32_t dwTlsIndex);
 #pragma endregion
 
-#pragma region Filesystem
+#pragma region Memory
+    uint32_t RtlAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t size);
+    uint32_t RtlReAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer, uint32_t size);
+    uint32_t RtlFreeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer);
+    uint32_t RtlSizeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer);
+    uint32_t RtlCreateHeap(uint32_t flags, uint32_t heapBase, uint32_t reserveSize, uint32_t commitSize, uint32_t lock, void* heapParams);
+    uint32_t RtlDestroyHeap(uint32_t heapHandle);
+
+    uint32_t XAllocMem(uint32_t size, uint32_t flags);
+    void XFreeMem(uint32_t baseAddress, uint32_t flags);
+    uint32_t VirtualAlloc(uint32_t lpAddress, uint32_t dwSize, uint32_t flAllocationType, uint32_t flProtect);
+    uint32_t VirtualFree(uint32_t lpAddress, uint32_t dwSize, uint32_t dwFreeType);
+    uint32_t MmGetPhysicalAddress(uint32_t address);
+    uint32_t MmAllocatePhysicalMemoryEx( uint32_t flags, uint32_t size, uint32_t protect, uint32_t minAddress, uint32_t maxAddress, uint32_t alignment);
+    uint32_t ExAllocatePool(uint32_t size);
+    uint32_t XamAlloc(uint32_t size);
+    void XamFree(uint32_t ptr);
+    void MmFreePhysicalMemory(uint32_t type, uint32_t guestAddress);
+    void GlobalMemoryStatus(XLPMEMORYSTATUS lpMemoryStatus);
+#pragma endregion
+
+#pragma region Stubs
+    void XeCryptShaInit();
+    void XeCryptShaUpdate();
+    void XeCryptShaFinal();
+    uint32_t XexLoadImage();
+    uint32_t XexUnloadImage();
+    uint32_t NtQueueApcThread();
+    uint32_t NtProtectVirtualMemory();
+    uint32_t XamShowMarketplaceUI();
+    uint32_t XamUserCheckPrivilege();
+    uint32_t XamUserAreUsersFriends();
+    uint32_t XamReadTileToTexture();
+    uint32_t XamShowGamerCardUIForXUID();
+    uint32_t XamContentGetLicenseMask();
+    uint32_t XamParseGamerTileKey();
+    void ExTerminateThread();
+    uint32_t XSetThreadProcessor();
+    void RtlFillMemoryUlong();
+    void RtlCompareMemoryUlong();
+    void ExAllocatePoolTypeWithTag();
+    void MmQueryAllocationSize();
+    uint32_t MmSetAddressProtect( uint32_t guestAddress, uint32_t size, uint32_t protect);
+    uint32_t NtAllocateVirtualMemory();
+    uint32_t NtFreeVirtualMemory();
+    void NtQueryVirtualMemory();
+    uint32_t NtProtectVirtualMemory();
+    void MmQueryStatistics();
+    void ExFreePool();
     void NtOpenFile();
     uint32_t NtCreateFile();
     void NtWriteFile();
@@ -264,71 +225,73 @@ namespace kernel {
     void NtQueryFullAttributesFile();
     void NtFlushBuffersFile();
     void NtDeviceIoControlFile();
-    uint32_t NtClose(uint32_t handle);
-#pragma endregion
-
-#pragma region Memory
-    uint32_t NtAllocateVirtualMemory();
-    uint32_t NtFreeVirtualMemory();
-    void NtQueryVirtualMemory();
-    uint32_t NtProtectVirtualMemory();
-    uint32_t RtlAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t size);
-    uint32_t RtlReAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer, uint32_t size);
-    uint32_t RtlFreeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer);
-    uint32_t RtlSizeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer);
-    uint32_t XAllocMem(uint32_t size, uint32_t flags);
-    void XFreeMem(uint32_t baseAddress, uint32_t flags);
-    void MmQueryStatistics();
-    void ExFreePool();
-    uint32_t VirtualAlloc(uint32_t lpAddress, uint32_t dwSize, uint32_t flAllocationType, uint32_t flProtect);
-    uint32_t VirtualFree(uint32_t lpAddress, uint32_t dwSize, uint32_t dwFreeType);
-
-    uint32_t MmGetPhysicalAddress(uint32_t address);
-    uint32_t MmAllocatePhysicalMemoryEx
-    (
-        uint32_t flags,
-        uint32_t size,
-        uint32_t protect,
-        uint32_t minAddress,
-        uint32_t maxAddress,
-        uint32_t alignment
-    );
-    uint32_t MmSetAddressProtect
-    (
-        uint32_t guestAddress,
-        uint32_t size,
-        uint32_t protect
-    );
-
     uint32_t MmQueryAddressProtect(uint32_t guestAddress);
-    void MmQueryAllocationSize();
-    uint32_t ExAllocatePool(uint32_t size);
-    void ExAllocatePoolTypeWithTag();
-    uint32_t XamAlloc(uint32_t size);
-    void XamFree(uint32_t ptr);
-    void MmFreePhysicalMemory(uint32_t type, uint32_t guestAddress);
-    void RtlFillMemoryUlong();
-    void RtlCompareMemoryUlong();
+    void ExRegisterTitleTerminateNotification();
+    void ObDeleteSymbolicLink();
+    void ObCreateSymbolicLink();
+    void XeCryptBnQwBeSigVerify();
+    void XeKeysGetKey();
+    void XeCryptRotSumSha();
+    void XeCryptSha();
+    void XeKeysConsolePrivateKeySign();
+    void XeKeysConsoleSignatureVerification();
+    void RtlCompareStringN();
+    void _snprintf_x();
+    void RtlTimeToTimeFields();
+    void RtlFreeAnsiString();
+    void RtlUnicodeStringToAnsiString();
+    void RtlInitUnicodeString();
+    void XexLoadImageHeaders();
+    void ObOpenObjectByName();
+    void ObReferenceObjectByName();
+    void RtlUpcaseUnicodeChar();
+    void ObIsTitleObject();
+    void ObReferenceObject();
+    void XMsgStartIORequestEx();
+    void XexGetModuleHandle();
+    void NtWaitForMultipleObjectsEx();
+    void NtDuplicateObject();
+    void NtCancelTimer();
+    void NtCreateTimer();
+    void NtSetTimerEx();
+    void KeQueryBasePriorityThread();
+    void ExThreadObjectType();
+    void KeEnterCriticalRegion();
+    void KeLeaveCriticalRegion();
+    void RtlUnwind_x();
+    void RtlCaptureContext_x();
+    void KeLockL2();
+    void KeUnlockL2();
+    void RtlRaiseException_x();
+    void _snwprintf_x();
+    void _swprintf_x();
+    void _vscwprintf_x();
+    void _vsnprintf_x();
+    void _vswprintf_x();
+    void sprintf_x();
+    void XexExecutableModuleHandle();
+    void ExLoadedCommandLine();
+    uint32_t XMsgStartIORequest(uint32_t App, uint32_t Message, XXOVERLAPPED* lpOverlapped, void* Buffer, uint32_t szBuffer);
+    uint32_t XGetAVPack();
+    uint32_t XexCheckExecutablePrivilege();
+    uint32_t KiApcNormalRoutineNop();
+    void KeEnableFpuExceptions();
+    void DbgBreakPoint();
+    void TimeStampBundle();
+    void DebugMonitorData();
+    void CertMonitorData();
+    void XexGetProcedureAddress();
+    void XexGetModuleSection();
+    void RtlImageXexHeaderField();
+    void XNotifyPositionUI();
+    void XAudioGetVoiceCategoryVolume();
+    void RtlTimeFieldsToTime();
+    void vsprintf_x();
+    void DbgPrint();
+    void __C_specific_handler_x();
+    void RtlNtStatusToDosError();
+    void ObDereferenceObject();
 #pragma endregion
-
-    // sort me plz
-
-    void XeCryptShaInit();
-    void XeCryptShaUpdate();
-    void XeCryptShaFinal();
-
-    uint32_t XexLoadImage();
-    uint32_t XexUnloadImage();
-    uint32_t NtQueueApcThread();
-    uint32_t NtProtectVirtualMemory();
-    uint32_t XamShowMarketplaceUI();
-    uint32_t XamUserCheckPrivilege();
-    uint32_t XamUserAreUsersFriends();
-    uint32_t XamReadTileToTexture();
-    uint32_t XamShowGamerCardUIForXUID();
-    uint32_t XamContentGetLicenseMask();
-    uint32_t XamParseGamerTileKey();
-
 }
 }
 

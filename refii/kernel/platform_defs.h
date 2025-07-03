@@ -29,6 +29,11 @@
         int64_t QuadPart;
     };
 
+    inline void OutputDebugStringA(const char* str) {
+        // On Linux, just print to stderr or discard
+        std::fprintf(stderr, "[DebugString] %s\n", str ? str : "(null)");
+    }
+
     // ==================== File Attribute Constants ====================
     #define FILE_ATTRIBUTE_DIRECTORY        0x10
     #define FILE_ATTRIBUTE_NORMAL           0x80
@@ -57,6 +62,16 @@
     #define OPEN_ALWAYS                     4
     #define TRUNCATE_EXISTING               5
 
+    // ==================== Wait Return Codes ====================
+    #define WAIT_OBJECT_0                   0x00000000
+    #define WAIT_ABANDONED                  0x00000080
+    #define WAIT_TIMEOUT                    0x00000102
+    #define WAIT_FAILED                     0xFFFFFFFF
+    #define WAIT_IO_COMPLETION              0x000000C0
+
+    // ==================== HRESULT & Return Codes ====================
+    #define S_FALSE                         0x00000001
+
     // ==================== Error Code Emulation ====================
     #define ERROR_SUCCESS                   0x00000000
     #define ERROR_INVALID_FUNCTION          0x00000001
@@ -79,6 +94,7 @@
     #define ERROR_NOT_FOUND                 0x00000490
     #define ERROR_DIRECTORY                 0x00000010
     #define ERROR_NO_SUCH_USER              0x00000525
+    #define ERROR_INVALID_ADDRESS           0x0000001E
 
     // ==================== Fallback GetLastError ====================
     inline int GetLastError() {
