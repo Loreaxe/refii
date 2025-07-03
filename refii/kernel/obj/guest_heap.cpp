@@ -16,15 +16,24 @@ void GuestHeap::Init()
 
 void* GuestHeap::Alloc(size_t size)
 {
+    size = std::max<size_t>(1, size);
+    size_t alignment = 0x10000;
+
     std::lock_guard lock(mutex);
 
-    return o1heapAllocate(heap, std::max<size_t>(1, size));
+    void* ptr = o1heapAllocate(heap, size + alignment);
+    size_t aligned = ((size_t)ptr + alignment) & ~(alignment - 1);
+
+    *((void**)aligned - 1) = ptr;
+    *((size_t*)aligned - 2) = size + O1HEAP_ALIGNMENT;
+
+    return (void*)aligned;
 }
 
 void* GuestHeap::AllocPhysical(size_t size, size_t alignment)
 {
     size = std::max<size_t>(1, size);
-    alignment = alignment == 0 ? 0x1000 : std::max<size_t>(16, alignment);
+    alignment = alignment == 0 ? 0x10000 : std::max<size_t>(0x10000, alignment);
 
     std::lock_guard lock(physicalMutex);
 
@@ -47,7 +56,7 @@ void GuestHeap::Free(void* ptr)
     else
     {
         std::lock_guard lock(mutex);
-        o1heapFree(heap, ptr);
+        o1heapFree(heap, *((void**)ptr - 1));
     }
 }
 

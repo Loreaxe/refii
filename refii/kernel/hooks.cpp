@@ -11,13 +11,26 @@ GUEST_FUNCTION_HOOK(sub_8221EA28, refii::kernel::QueryPerformanceCounter);
 GUEST_FUNCTION_HOOK(sub_82CC6E78, refii::kernel::QueryPerformanceFrequency);
 GUEST_FUNCTION_HOOK(sub_822660B0, refii::kernel::GetTickCount);
 GUEST_FUNCTION_HOOK(sub_82CC2440, refii::kernel::GlobalMemoryStatus);
+
 // Heap Functions
-GUEST_FUNCTION_HOOK(sub_82CC5D38, refii::kernel::RtlCreateHeap);
-GUEST_FUNCTION_HOOK(sub_822387B8, refii::kernel::RtlAllocateHeap);
-GUEST_FUNCTION_HOOK(sub_82239490, refii::kernel::RtlFreeHeap);
-GUEST_FUNCTION_HOOK(sub_82CC62E0, refii::kernel::RtlReAllocateHeap);
-GUEST_FUNCTION_HOOK(sub_82239808, refii::kernel::RtlSizeHeap);
-GUEST_FUNCTION_HOOK(sub_82CC4F98, refii::kernel::RtlDestroyHeap);
+#ifdef REFII_HEAP_EMU
+    GUEST_FUNCTION_HOOK(sub_822387B8, refii::kernel::RtlAllocateHeap);
+    GUEST_FUNCTION_HOOK(sub_82239490, refii::kernel::RtlFreeHeap);
+    GUEST_FUNCTION_HOOK(sub_82CC62E0, refii::kernel::RtlReAllocateHeap);
+    GUEST_FUNCTION_HOOK(sub_82239808, refii::kernel::RtlSizeHeap);
+    GUEST_FUNCTION_HOOK(sub_82CC5D38, refii::kernel::RtlCreateHeap);
+    GUEST_FUNCTION_HOOK(sub_82CC4F98, refii::kernel::RtlDestroyHeap);
+#else 
+    GUEST_FUNCTION_HOOK(sub_822387B8, refii::kernel::RtlAllocateHeap);
+    GUEST_FUNCTION_HOOK(sub_82239490, refii::kernel::RtlFreeHeap);
+    GUEST_FUNCTION_HOOK(sub_82CC62E0, refii::kernel::RtlReAllocateHeap);
+    GUEST_FUNCTION_HOOK(sub_82239808, refii::kernel::RtlSizeHeap);
+    GUEST_FUNCTION_ALIAS_STUB(sub_82CC5D38, "RtlCreateHeap");
+    GUEST_FUNCTION_ALIAS_STUB(sub_82CC4F98, "RtlDestroyHeap");
+    GUEST_FUNCTION_ALIAS_STUB(sub_82CC6BC0, "HeapCreate");
+    GUEST_FUNCTION_ALIAS_STUB(sub_82CC6C40, "HeapDestroy");
+#endif
+
 
 GUEST_FUNCTION_HOOK(sub_822386D0, refii::kernel::XAllocMem);
 GUEST_FUNCTION_HOOK(sub_822398B0, refii::kernel::XFreeMem);
@@ -45,8 +58,7 @@ GUEST_FUNCTION_HOOK(sub_82170010, OutputDebugStringA);
 
 
 // stubs
-GUEST_FUNCTION_ALIAS_STUB(sub_82CC6BC0, "HeapCreate");
-GUEST_FUNCTION_ALIAS_STUB(sub_82CC6C40, "HeapDestroy"); 
+
 GUEST_FUNCTION_STUB(__imp__vsprintf);
 GUEST_FUNCTION_STUB(__imp___vsnprintf);
 GUEST_FUNCTION_STUB(__imp__sprintf);

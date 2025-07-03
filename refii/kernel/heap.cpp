@@ -1,8 +1,7 @@
 #include <stdafx.h>
 #include <kernel/kernel.h>
 
-static constexpr uint32_t DEFAULT_PROCESS_HEAP = 0x10000000;
-
+#ifdef REFII_HEAP_EMU
 uint32_t refii::kernel::RtlCreateHeap(uint32_t flags, uint32_t heapBase, uint32_t reserveSize,
     uint32_t commitSize, uint32_t lock, void* heapParams)
 {
@@ -136,4 +135,47 @@ uint32_t refii::kernel::RtlSizeHeap(uint32_t heapHandle, uint32_t flags, uint32_
     // All allocations ultimately come from g_userHeap, so we can use it for size
     return (uint32_t)g_userHeap.Size(g_memory.Translate(memoryPointer));
 }
+#else
+uint32_t refii::kernel::RtlAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t size)
+{
+    void* ptr = g_userHeap.Alloc(size);
+    if ((flags & 0x8) != 0)
+        memset(ptr, 0, size);
 
+    assert(ptr);
+    return g_memory.MapVirtual(ptr);
+}
+
+uint32_t refii::kernel::RtlReAllocateHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer, uint32_t size)
+{
+    void* ptr = g_userHeap.Alloc(size);
+    if ((flags & 0x8) != 0)
+        memset(ptr, 0, size);
+
+    if (memoryPointer != 0)
+    {
+        void* oldPtr = g_memory.Translate(memoryPointer);
+        memcpy(ptr, oldPtr, std::min<size_t>(size, g_userHeap.Size(oldPtr)));
+        g_userHeap.Free(oldPtr);
+    }
+
+    assert(ptr);
+    return g_memory.MapVirtual(ptr);
+}
+
+uint32_t refii::kernel::RtlFreeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer)
+{
+    if (memoryPointer != NULL)
+        g_userHeap.Free(g_memory.Translate(memoryPointer));
+
+    return true;
+}
+
+uint32_t refii::kernel::RtlSizeHeap(uint32_t heapHandle, uint32_t flags, uint32_t memoryPointer)
+{
+    if (memoryPointer != NULL)
+        return (uint32_t)g_userHeap.Size(g_memory.Translate(memoryPointer));
+
+    return 0;
+}
+#endif // REFII_HEAP_EMU
