@@ -86,6 +86,43 @@ struct FindHandle : refii::kernel::KernelObject
     }
 };
 
+struct PendingCompletionRoutine {
+    uint32_t completionRoutine;  // Guest address of completion routine
+    uint32_t errorCode;
+    uint32_t bytesTransferred;
+    XOVERLAPPED* overlapped;
+    uint32_t overlappedGuestAddr;
+};
+
+// Thread-local queue for pending completion routines
+thread_local std::vector<PendingCompletionRoutine> g_pendingCompletionRoutines;
+
+bool FileSystem::IsPendingCallbacksEmpty()
+{
+    return g_pendingCompletionRoutines.empty();
+}
+
+// Function to check and execute pending completion routines (call this from alertable wait functions)
+void FileSystem::ProcessPendingCompletionRoutines()
+{
+    if (g_pendingCompletionRoutines.empty())
+        return;
+
+    // Process all pending completion routines
+    auto pending = std::move(g_pendingCompletionRoutines);
+    g_pendingCompletionRoutines.clear();
+
+    for (const auto& routine : pending)
+    {
+        // Call the guest completion routine
+        // Signature: VOID CALLBACK FileIOCompletionRoutine(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped)
+        GuestToHostFunction<void>(routine.completionRoutine,
+            routine.errorCode,
+            routine.bytesTransferred,
+            routine.overlappedGuestAddr);
+    }
+}
+
 FileHandle* XCreateFileA
 (
     const char* lpFileName,
@@ -321,30 +358,77 @@ uint32_t XFindNextFileA(FindHandle* Handle, WIN32_FIND_DATAA* lpFindFileData)
 
 uint32_t XReadFileEx(FileHandle* hFile, void* lpBuffer, uint32_t nNumberOfBytesToRead, XOVERLAPPED* lpOverlapped, uint32_t lpCompletionRoutine)
 {
-    LOGF_UTILITY("hFile=0x{:X}, lpBuffer=0x{:X}, nNumberOfBytesToRead={}, lpOverlapped=0x{:X}, lpCompletionRoutine=0x{:X}",
-        (uintptr_t)hFile, (uintptr_t)lpBuffer, nNumberOfBytesToRead, (uintptr_t)lpOverlapped, (uintptr_t)lpCompletionRoutine);
+    LOGF_UTILITY("hFile=0x{:x}, lpBuffer=0x{:x}, nNumberOfBytesToRead=0x{:x}, lpOverlapped=0x{:x}, lpCompletionRoutine=0x{:x}",
+        refii::kernel::GetKernelHandle(hFile),
+        refii::kernel::g_memory.MapVirtual(lpBuffer),
+        nNumberOfBytesToRead,
+        refii::kernel::g_memory.MapVirtual(lpOverlapped),
+        lpCompletionRoutine);
+
+    if (refii::kernel::IsInvalidKernelObject(hFile) || !lpBuffer || !lpOverlapped || !lpCompletionRoutine)
+    {
+        GuestThread::SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    // For emulation, we'll perform the read synchronously but queue the completion routine
+    // In a real implementation, this would be truly asynchronous
+
     uint32_t result = FALSE;
-    uint32_t numberOfBytesRead;
+    uint32_t numberOfBytesRead = 0;
+    uint32_t errorCode = ERROR_SUCCESS;
+
+    // Set up file position from OVERLAPPED structure
     std::streamoff streamOffset = lpOverlapped->Offset + (std::streamoff(lpOverlapped->OffsetHigh.get()) << 32U);
     hFile->stream.clear();
     hFile->stream.seekg(streamOffset, std::ios::beg);
+
     if (hFile->stream.bad())
-        return FALSE;
-
-    hFile->stream.read((char *)(lpBuffer), nNumberOfBytesToRead);
-    if (!hFile->stream.bad())
     {
-        numberOfBytesRead = uint32_t(hFile->stream.gcount());
-        result = TRUE;
+        errorCode = ERROR_SEEK;
+        result = FALSE;
+    }
+    else
+    {
+        // Perform the read
+        hFile->stream.read((char*)lpBuffer, nNumberOfBytesToRead);
+
+        if (!hFile->stream.bad())
+        {
+            numberOfBytesRead = uint32_t(hFile->stream.gcount());
+            result = TRUE;
+
+            // Check for end of file
+            if (numberOfBytesRead == 0 && hFile->stream.eof())
+            {
+                errorCode = ERROR_HANDLE_EOF;
+                result = FALSE;
+            }
+        }
+        else
+        {
+            errorCode = ERROR_READ_FAULT;
+            result = FALSE;
+        }
     }
 
-    if (result)
-    {
-        lpOverlapped->Internal = 0;
-        lpOverlapped->InternalHigh = numberOfBytesRead;
-    }
+    // Update OVERLAPPED structure
+    lpOverlapped->Internal = errorCode;
+    lpOverlapped->InternalHigh = numberOfBytesRead;
 
-    return result;
+    // Queue the completion routine
+    PendingCompletionRoutine pending;
+    pending.completionRoutine = lpCompletionRoutine;
+    pending.errorCode = errorCode;
+    pending.bytesTransferred = numberOfBytesRead;
+    pending.overlapped = lpOverlapped;
+    pending.overlappedGuestAddr = refii::kernel::g_memory.MapVirtual(lpOverlapped);
+
+    g_pendingCompletionRoutines.push_back(pending);
+
+    // ReadFileEx returns TRUE if the async operation was successfully queued
+    // It returns FALSE only if the request couldn't be queued
+    return result || errorCode == ERROR_HANDLE_EOF ? TRUE : FALSE;
 }
 
 uint32_t XGetFileAttributesA(const char* lpFileName)

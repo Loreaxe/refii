@@ -2,7 +2,7 @@
 #include "kernel.h"
 #include <locale/locale.h>
 #include <user/config.h>
-
+#include "io/file_system.h"
 refii::kernel::Mutex refii::kernel::g_kernelLock;
 
 void refii::kernel::DestroyKernelObject(KernelObject* obj)
@@ -54,12 +54,39 @@ uint32_t refii::kernel::GuestTimeoutToMilliseconds(be<int64_t>* timeout)
 
 uint32_t refii::kernel::KeDelayExecutionThread(uint32_t WaitMode, bool Alertable, be<int64_t>* Timeout)
 {
-    // We don't do async file reads.
-    if (Alertable)
-        return STATUS_USER_APC;
-
     uint32_t timeout = GuestTimeoutToMilliseconds(Timeout);
-
+    
+    if (Alertable)
+    {
+        // Check for pending completion routines before sleeping
+        if (!FileSystem::IsPendingCallbacksEmpty())
+        {
+            FileSystem::ProcessPendingCompletionRoutines();
+            return STATUS_USER_APC;
+        }
+        
+        // For alertable waits, we should periodically check for completion routines
+        auto deadline = (timeout == INFINITE) ? 
+            std::chrono::steady_clock::time_point::max() : 
+            std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
+            
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            // Sleep for a short period
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            
+            // Check for pending completion routines
+            if (!FileSystem::IsPendingCallbacksEmpty())
+            {
+                FileSystem::ProcessPendingCompletionRoutines();
+                return STATUS_USER_APC;
+            }
+        }
+        
+        return STATUS_TIMEOUT;
+    }
+    
+    // Non-alertable wait
 #ifdef _WIN32
     Sleep(timeout);
 #else
@@ -628,6 +655,61 @@ uint32_t refii::kernel::NtSuspendThread(GuestThreadHandle* hThread, uint32_t* su
 uint32_t refii::kernel::NtWaitForSingleObjectEx(uint32_t Handle, uint32_t WaitMode, uint32_t Alertable, be<int64_t>* Timeout)
 {
     uint32_t timeout = GuestTimeoutToMilliseconds(Timeout);
+
+    // Handle alertable waits
+    if (Alertable)
+    {
+        // Check for pending completion routines before waiting
+        if (!FileSystem::IsPendingCallbacksEmpty())
+        {
+            FileSystem::ProcessPendingCompletionRoutines();
+            return STATUS_USER_APC;
+        }
+
+        // For alertable waits, we need to periodically check for completion routines
+        auto deadline = (timeout == INFINITE) ?
+            std::chrono::steady_clock::time_point::max() :
+            std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
+
+        while (std::chrono::steady_clock::now() < deadline)
+        {
+            // Try to wait for a short period
+            uint32_t shortTimeout = std::min(timeout, 10u); // Check every 10ms
+
+            if (IsKernelObject(Handle))
+            {
+                uint32_t waitResult = GetKernelObject(Handle)->Wait(shortTimeout);
+                if (waitResult == STATUS_SUCCESS)
+                {
+                    return STATUS_SUCCESS;
+                }
+            }
+            else
+            {
+                LOGF_UTILITY("Unrecognized handle value 0x{:x}", Handle);
+                return STATUS_INVALID_HANDLE;
+            }
+
+            // Check for pending completion routines
+            if (!FileSystem::IsPendingCallbacksEmpty())
+            {
+                FileSystem::ProcessPendingCompletionRoutines();
+                return STATUS_USER_APC;
+            }
+
+            // Update remaining timeout
+            if (timeout != INFINITE)
+            {
+                auto now = std::chrono::steady_clock::now();
+                if (now >= deadline)
+                    break;
+
+                timeout = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now).count();
+            }
+        }
+
+        return STATUS_TIMEOUT;
+    }
 
     if (IsKernelObject(Handle))
     {
