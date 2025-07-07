@@ -114,6 +114,8 @@ void FileSystem::ProcessPendingCompletionRoutines()
 
     for (const auto& routine : pending)
     {
+        LOGF_UTILITY("Processing pending completion routine: ErrorCode: {}, BytesTransferred: {}, Overlapped: 0x{:x}",
+            routine.errorCode, routine.bytesTransferred, refii::kernel::g_memory.MapVirtual(routine.overlapped));
         // Call the guest completion routine
         // Signature: VOID CALLBACK FileIOCompletionRoutine(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped)
         GuestToHostFunction<void>(routine.completionRoutine,
@@ -133,11 +135,6 @@ FileHandle* XCreateFileA
     uint32_t dwFlagsAndAttributes
 )
 {
-    LOGF_UTILITY("lpFileName: {}, dwDesiredAccess: 0x{:X}, dwShareMode: 0x{:X}, lpSecurityAttributes: {}, dwCreationDisposition: 0x{:X}, dwFlagsAndAttributes: 0x{:X}",
-        lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes);
-    assert(((dwDesiredAccess & ~(GENERIC_READ | GENERIC_WRITE | FILE_READ_DATA)) == 0) && "Unknown desired access bits.");
-    assert(((dwShareMode & ~(FILE_SHARE_READ | FILE_SHARE_WRITE)) == 0) && "Unknown share mode bits.");
-    assert(((dwCreationDisposition & ~(CREATE_NEW | CREATE_ALWAYS)) == 0) && "Unknown creation disposition bits.");
 
     std::filesystem::path filePath = FileSystem::ResolvePath(lpFileName, true);
     std::fstream fileStream;
@@ -164,6 +161,8 @@ FileHandle* XCreateFileA
     FileHandle *fileHandle = refii::kernel::CreateKernelObject<FileHandle>();
     fileHandle->stream = std::move(fileStream);
     fileHandle->path = std::move(filePath);
+    LOGF_UTILITY("lpFileName: {}, dwDesiredAccess: 0x{:X}, dwShareMode: 0x{:X}, lpSecurityAttributes: {}, dwCreationDisposition: 0x{:X}, dwFlagsAndAttributes: 0x{:X} => FileHandle=0x{:x}",
+        lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, refii::kernel::GetKernelHandle(fileHandle));
     return fileHandle;
 }
 
@@ -210,6 +209,12 @@ uint32_t XReadFile
     XOVERLAPPED* lpOverlapped
 )
 {
+    LOGF_UTILITY("hFile=0x{:x}, lpBuffer=0x{:x}, nNumberOfBytesToRead=0x{:x}, lpNumberOfBytesRead=0x{:x}, lpOverlapped=0x{:x}",
+        refii::kernel::GetKernelHandle(hFile),
+        refii::kernel::g_memory.MapVirtual(lpBuffer),
+        nNumberOfBytesToRead,
+        refii::kernel::g_memory.MapVirtual(lpNumberOfBytesRead),
+        refii::kernel::g_memory.MapVirtual(lpOverlapped));
     uint32_t result = FALSE;
     if (lpOverlapped != nullptr)
     {
@@ -248,6 +253,11 @@ uint32_t XReadFile
 
 uint32_t XSetFilePointer(FileHandle* hFile, int32_t lDistanceToMove, be<int32_t>* lpDistanceToMoveHigh, uint32_t dwMoveMethod)
 {
+    LOGF_UTILITY("hFile=0x{:x}, lDistanceToMove=0x{:x}, lpDistanceToMoveHigh=0x{:x}, dwMoveMethod=0x{:x}",
+        refii::kernel::GetKernelHandle(hFile),
+        lDistanceToMove,
+        refii::kernel::g_memory.MapVirtual(lpDistanceToMoveHigh),
+        dwMoveMethod);
     int32_t distanceToMoveHigh = lpDistanceToMoveHigh ? lpDistanceToMoveHigh->get() : 0;
     std::streamoff streamOffset = lDistanceToMove + (std::streamoff(distanceToMoveHigh) << 32U);
     std::fstream::seekdir streamSeekDir = {};
@@ -283,6 +293,11 @@ uint32_t XSetFilePointer(FileHandle* hFile, int32_t lDistanceToMove, be<int32_t>
 
 uint32_t XSetFilePointerEx(FileHandle* hFile, int32_t lDistanceToMove, LARGE_INTEGER* lpNewFilePointer, uint32_t dwMoveMethod)
 {
+    LOGF_UTILITY("hFile=0x{:x}, lDistanceToMove=0x{:x}, lpNewFilePointer=0x{:x}, dwMoveMethod=0x{:x}",
+        refii::kernel::GetKernelHandle(hFile),
+        lDistanceToMove,
+        refii::kernel::g_memory.MapVirtual(lpNewFilePointer),
+        dwMoveMethod);
     std::fstream::seekdir streamSeekDir = {};
     switch (dwMoveMethod)
     {
@@ -317,6 +332,7 @@ uint32_t XSetFilePointerEx(FileHandle* hFile, int32_t lDistanceToMove, LARGE_INT
 
 FindHandle* XFindFirstFileA(const char* lpFileName, WIN32_FIND_DATAA* lpFindFileData)
 {
+    LOGF_UTILITY("lpFileName=\"{}\", lpFindFileData=0x{:x}", lpFileName ? lpFileName : "(null)", refii::kernel::g_memory.MapVirtual(lpFindFileData));
     std::string_view path = lpFileName;
     if (path.find("\\*") == (path.size() - 2) || path.find("/*") == (path.size() - 2))
     {
@@ -836,8 +852,6 @@ GUEST_FUNCTION_HOOK(sub_82CC2F10, XGetVolumeInformationA);
 DECLARE_STUB_FUNCTION_RETURN(uint32_t, XGetFilePhysicalSortKey, (FileHandle* hFile), 0);
 GUEST_FUNCTION_HOOK(sub_82CC7BB8, XGetFilePhysicalSortKey);
 
-// XMountUtilityDrive
-GUEST_FUNCTION_STUB(sub_8248CB00);
 
 // Native C functions (optional... can be stubbed as well - crack)
 // function names are prefixed with "__" to avoid conflicts with existing crt functions
