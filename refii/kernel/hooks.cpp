@@ -90,3 +90,13 @@ GUEST_FUNCTION_ALIAS_STUB(sub_822EAAE0, "init_xbl")
                             -- Exception reading memory address 0x24 (translated == 0x100000024)
 */
 //GUEST_FUNCTION_ALIAS_STUB(sub_8221BD38, "_unk_init_locks?");
+
+void FixR11CaseIssue(PPCRegister& r11)
+{
+    // r11.u64 is the base of the guest memory (0x0000000100000000) when it should be 0
+    if (r11.u64 == 0x0000000100000000)
+    {
+        r11.u64 = 0;
+    }
+}
+

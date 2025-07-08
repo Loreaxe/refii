@@ -120,3 +120,10 @@ invalid_instructions = [
     { data = 0x00000000, size = 4 },    # Padding
     { data = 0x00485645, size = 0x328 },   # End of .text
 ]
+
+# This midasm hook is a workaround for when r11.u64 is the base of the guest memory (0x0000000100000000) when it should be 0
+[[midasm_hook]]
+name = "FixR11CaseIssue"
+address = 0x82A373EC
+registers = ["r11"]
+return = false
