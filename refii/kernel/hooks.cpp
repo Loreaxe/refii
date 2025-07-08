@@ -40,7 +40,7 @@ GUEST_FUNCTION_HOOK(sub_82CC7548, refii::kernel::VirtualFree);
 GUEST_FUNCTION_HOOK(sub_82CB0B30, memmove);
 GUEST_FUNCTION_HOOK(sub_826BF770, memcpy);
 GUEST_FUNCTION_HOOK(sub_826BFCF0, memset);
-GUEST_FUNCTION_HOOK(sub_82170010, OutputDebugStringA);
+//GUEST_FUNCTION_HOOK(sub_82170010, OutputDebugStringA);
 
 //
 // // sprintf
@@ -49,11 +49,12 @@ GUEST_FUNCTION_HOOK(sub_82170010, OutputDebugStringA);
 //    sub_831B1630(ctx, base);
 //}
 //
-//void GameLogMsg(char* msg)
-//{
-//    LOG_UTILITY(msg);
-//}
-//GUEST_FUNCTION_HOOK(sub_82173070, GameLogMsg);
+void GuestDbgPrint(char* msg)
+{
+    LOG_UTILITY(msg);
+}
+// OutputDebugStringA --> GuestDbgPrint
+GUEST_FUNCTION_HOOK(sub_82170010, GuestDbgPrint);
 //
 
 
