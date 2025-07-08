@@ -113,7 +113,6 @@ functions = [
     { address = 0x8311CE90, size = 0x0000067C },
     { address = 0x82BEFC50, size = 0x00000BEC },
     { address = 0x82BEFC68, size = 0x00000BEC },
-    { address = 0x8311CE90, size = 0x00000758 },
 ]
 
 invalid_instructions = [

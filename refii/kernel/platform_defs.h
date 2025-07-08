@@ -45,6 +45,19 @@
     #define FILE_READ_DATA                  0x00000001
     #define INVALID_FILE_SIZE               0xFFFFFFFF
 
+    // ==================== File Creation / Attribute Flags ====================
+    #define FILE_FLAG_WRITE_THROUGH         0x80000000
+    #define FILE_FLAG_OVERLAPPED            0x40000000
+    #define FILE_FLAG_NO_BUFFERING          0x20000000
+    #define FILE_FLAG_RANDOM_ACCESS         0x10000000
+    #define FILE_FLAG_SEQUENTIAL_SCAN       0x08000000
+    #define FILE_FLAG_DELETE_ON_CLOSE       0x04000000
+    #define FILE_FLAG_BACKUP_SEMANTICS      0x02000000
+    #define FILE_FLAG_POSIX_SEMANTICS       0x01000000
+    #define FILE_FLAG_OPEN_REPARSE_POINT    0x00200000
+    #define FILE_FLAG_OPEN_NO_RECALL        0x00100000
+    #define FILE_FLAG_FIRST_PIPE_INSTANCE   0x00080000
+
     // ==================== File Pointer Move Methods ====================
     #define FILE_BEGIN                      0
     #define FILE_CURRENT                    1
@@ -95,6 +108,18 @@
     #define ERROR_DIRECTORY                 0x00000010
     #define ERROR_NO_SUCH_USER              0x00000525
     #define ERROR_INVALID_ADDRESS           0x0000001E
+    #define ERROR_SEEK                      0x00000084  
+    #define ERROR_HANDLE_EOF                0x00000026  
+    #define ERROR_READ_FAULT                0x0000001E
+    #define ERROR_INVALID_NAME              0x0000007B
+    #define ERROR_NOT_SUPPORTED             0x00000032
+    #define ERROR_FILE_EXISTS               0x00000050
+    #define ERROR_CANNOT_MAKE               0x00000052
+    #define ERROR_DIR_NOT_EMPTY             0x00000091
+    #define ERROR_NOT_READY                 0x00000015
+    #define ERROR_DISK_FULL                 0x00000070
+    #define ERROR_FILE_CORRUPT              0x0000066A
+    #define ERROR_NOACCESS                  0x0000003E
 
     // ==================== Fallback GetLastError ====================
     inline int GetLastError() {
@@ -122,6 +147,16 @@ constexpr uint32_t STATUS_OBJECT_NAME_NOT_FOUND     = 0xC0000034;
 constexpr uint32_t STATUS_OBJECT_PATH_NOT_FOUND     = 0xC000003A;
 constexpr uint32_t STATUS_NO_MEMORY                 = 0xC0000017;
 constexpr uint32_t STATUS_BUFFER_TOO_SMALL          = 0xC0000023;
+constexpr uint32_t STATUS_INVALID_HANDLE            = 0xC0000008;
+constexpr uint32_t STATUS_OBJECT_TYPE_MISMATCH      = 0xC0000024;
+constexpr uint32_t STATUS_THREAD_IS_TERMINATING     = 0xC000004B;
+constexpr uint32_t STATUS_INVALID_PAGE_PROTECTION   = 0xC0000045;
+constexpr uint32_t STATUS_ALREADY_COMMITTED         = 0xC0000021;
+constexpr uint32_t STATUS_CONFLICTING_ADDRESSES     = 0xC0000018;
+constexpr uint32_t STATUS_INVALID_SYSTEM_SERVICE    = 0xC000001C;
+constexpr uint32_t STATUS_INVALID_INFO_CLASS        = 0xC0000003;
+constexpr uint32_t STATUS_END_OF_FILE               = 0xC0000011;
+constexpr uint32_t STATUS_NOT_SUPPORTED             = 0xC00000BB;
 
 // ==================== Memory Protection Flags ====================
 

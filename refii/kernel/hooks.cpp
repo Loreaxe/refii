@@ -99,4 +99,3 @@ void FixR11CaseIssue(PPCRegister& r11)
         r11.u64 = 0;
     }
 }
-

@@ -467,6 +467,100 @@ uint32_t refii::kernel::ExCreateThread(be<uint32_t>* handle, uint32_t stackSize,
     return 0;
 }
 
+// ======== Linux Critical Section Start ========
+
+#ifdef __linux__
+
+void refii::kernel::RtlLeaveCriticalSection(XRTL_CRITICAL_SECTION* cs) {
+    const uint32_t thisThread = GuestThread::GetCurrentThreadId();
+
+    if (cs->OwningThread != thisThread) {
+        std::fprintf(stderr, "‼️ RtlLeaveCriticalSection: thread 0x%X tried to leave a lock owned by 0x%X\n",
+                     thisThread, cs->OwningThread);
+        std::abort();
+    }
+
+    if (--cs->RecursionCount == 0) {
+        cs->OwningThread = 0;
+
+        // Set LockCount to -1 (unlocked)
+        auto* lockCount = reinterpret_cast<std::atomic<int32_t>*>(&cs->LockCount);
+        lockCount->store(-1, std::memory_order_release);
+    }
+}
+
+void refii::kernel::RtlEnterCriticalSection(XRTL_CRITICAL_SECTION* cs) {
+    const uint32_t thisThread = GuestThread::GetCurrentThreadId();
+
+    auto* lockCount = reinterpret_cast<std::atomic<int32_t>*>(&cs->LockCount);
+
+    while (true) {
+        int32_t expected = -1;
+
+        if (lockCount->compare_exchange_strong(expected, 0, std::memory_order_acquire)) {
+            // Lock acquired
+            cs->OwningThread = thisThread;
+            cs->RecursionCount = 1;
+            return;
+        }
+
+        if (cs->OwningThread == thisThread) {
+            cs->RecursionCount++;
+            return;
+        }
+
+        // Yield to prevent CPU burn
+        std::this_thread::yield();
+    }
+}
+
+uint32_t refii::kernel::RtlInitializeCriticalSection(XRTL_CRITICAL_SECTION* cs) {
+    auto* lockCount = reinterpret_cast<std::atomic<int32_t>*>(&cs->LockCount);
+    lockCount->store(-1, std::memory_order_relaxed);
+    cs->RecursionCount = 0;
+    cs->OwningThread = 0;
+    return 0;
+}
+
+bool refii::kernel::RtlTryEnterCriticalSection(XRTL_CRITICAL_SECTION* cs) {
+    const uint32_t thisThread = GuestThread::GetCurrentThreadId();
+    assert(thisThread != 0);
+
+    auto* lockCount = reinterpret_cast<std::atomic<int32_t>*>(&cs->LockCount);
+
+    int32_t expected = -1;
+    if (lockCount->compare_exchange_strong(expected, 0, std::memory_order_acquire)) {
+        cs->OwningThread = thisThread;
+        cs->RecursionCount = 1;
+        return true;
+    }
+
+    if (cs->OwningThread == thisThread) {
+        cs->RecursionCount++;
+        return true;
+    }
+
+    return false;
+}
+
+void refii::kernel::RtlInitializeCriticalSectionAndSpinCount(XRTL_CRITICAL_SECTION* cs, uint32_t spinCount) {
+    cs->Header.Absolute = (spinCount + 255) >> 8;
+
+    auto* lockCount = reinterpret_cast<std::atomic<int32_t>*>(&cs->LockCount);
+    lockCount->store(-1, std::memory_order_relaxed);
+
+    cs->RecursionCount = 0;
+    cs->OwningThread = 0;
+}
+
+#endif // __linux__
+
+// ======== Linux Critical Section End ========
+
+// ======== Windows Critical Section Start ========
+
+#ifdef _WIN32
+
 void refii::kernel::RtlLeaveCriticalSection(XRTL_CRITICAL_SECTION* cs)
 {
     cs->RecursionCount--;
@@ -535,6 +629,10 @@ void refii::kernel::RtlInitializeCriticalSectionAndSpinCount(XRTL_CRITICAL_SECTI
     cs->RecursionCount = 0;
     cs->OwningThread = 0;
 }
+
+#endif
+
+// ======== Windows Critical Section End ========
 
 void refii::kernel::KeBugCheck()
 {

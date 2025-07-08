@@ -76,6 +76,7 @@ set(REFII_KERNEL_CXX_SOURCES
     "kernel/hooks.cpp"
     "kernel/obj/heap_object.cpp"
     "kernel/heap.cpp"
+    "kernel/linux_hooks.cpp"
 )
 
 set(REFII_LOCALE_CXX_SOURCES

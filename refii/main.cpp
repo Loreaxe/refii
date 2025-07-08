@@ -20,6 +20,7 @@
 #include <os/registry.h>
 #include <ui/game_window.h>
 #include <preload_executable.h>
+#include <kernel/linux_hooks.h>
 
 #ifdef _WIN32
 #include <timeapi.h>
@@ -297,6 +298,12 @@ int main(int argc, char *argv[])
     //}
 
    // Video::StartPipelinePrecompilation();
+
+#ifdef __linux__
+    refii::kernel::InitializeGlobalCriticalSections();
+    refii::kernel::InitializeCallbackArray();
+    refii::kernel::InitializeCallbackRdata();
+#endif
 
     GuestThread::Start({ entry, 0, 0 });
 
