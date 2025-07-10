@@ -49,13 +49,33 @@ GUEST_FUNCTION_HOOK(sub_826BFCF0, memset);
 //    sub_831B1630(ctx, base);
 //}
 //
+
+// todo(crack): move this some where more gooder
+std::string wchar_to_cstr(wchar_t const* wcstr) {
+    auto s = std::mbstate_t();
+    auto const target_char_count = std::wcsrtombs(nullptr, &wcstr, 0, &s);
+    if (target_char_count == static_cast<std::size_t>(-1)) {
+        throw std::logic_error("Illegal byte sequence");
+    }
+
+    // +1 because std::string adds a null terminator which isn't part of size
+    auto str = std::string(target_char_count, '\0');
+    std::wcsrtombs(str.data(), &wcstr, str.size() + 1, &s);
+    return str;
+}
+
 void GuestDbgPrint(char* msg)
 {
     LOG_UTILITY(msg);
 }
+void GuestDbgPrintW(wchar_t* msg)
+{
+    LOG_UTILITY(wchar_to_cstr(msg));
+}
 // OutputDebugStringA --> GuestDbgPrint
 GUEST_FUNCTION_HOOK(sub_82170010, GuestDbgPrint);
-//
+// OutputDebugStringW --> GuestDbgPrintW
+GUEST_FUNCTION_HOOK(sub_82CC7FF0, GuestDbgPrintW);
 
 
 // stubs
