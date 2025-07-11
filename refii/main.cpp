@@ -46,6 +46,12 @@ refii::kernel::GuestHeap refii::kernel::g_userHeap;
 XDBFWrapper g_xdbfWrapper;
 std::unordered_map<uint16_t, GuestTexture*> g_xdbfTextureCache;
 
+void DoBootlegPatches()
+{
+    // Allow debug message output via OutputDebugStringA
+    *(uint8_t*)refii::kernel::g_memory.Translate(0x83496afd) = 1;
+}
+
 uint32_t LdrLoadModule(const std::filesystem::path &path)
 {
     auto loadResult = LoadFile(path);
@@ -305,7 +311,10 @@ int main(int argc, char *argv[])
     refii::kernel::InitializeCallbackRdata();
 #endif
 
+    DoBootlegPatches();
     GuestThread::Start({ entry, 0, 0 });
+
+    
 
     return 0;
 }

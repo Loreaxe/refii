@@ -41,7 +41,7 @@ GUEST_FUNCTION_HOOK(sub_82CC7548, refii::kernel::VirtualFree);
 GUEST_FUNCTION_HOOK(sub_82CB0B30, memmove);
 GUEST_FUNCTION_HOOK(sub_826BF770, memcpy);
 GUEST_FUNCTION_HOOK(sub_826BFCF0, memset);
-GUEST_FUNCTION_HOOK(sub_82170010, OutputDebugStringA);
+//GUEST_FUNCTION_HOOK(sub_82170010, OutputDebugStringA);
 
 //
 // // sprintf
@@ -50,12 +50,33 @@ GUEST_FUNCTION_HOOK(sub_82170010, OutputDebugStringA);
 //    sub_831B1630(ctx, base);
 //}
 //
-//void GameLogMsg(char* msg)
-//{
-//    LOG_UTILITY(msg);
-//}
-//GUEST_FUNCTION_HOOK(sub_82173070, GameLogMsg);
-//
+
+// todo(crack): move this some where more gooder
+std::string wchar_to_cstr(wchar_t const* wcstr) {
+    auto s = std::mbstate_t();
+    auto const target_char_count = std::wcsrtombs(nullptr, &wcstr, 0, &s);
+    if (target_char_count == static_cast<std::size_t>(-1)) {
+        throw std::logic_error("Illegal byte sequence");
+    }
+
+    // +1 because std::string adds a null terminator which isn't part of size
+    auto str = std::string(target_char_count, '\0');
+    std::wcsrtombs(str.data(), &wcstr, str.size() + 1, &s);
+    return str;
+}
+
+void GuestDbgPrint(char* msg)
+{
+    LOG_UTILITY(msg);
+}
+void GuestDbgPrintW(wchar_t* msg)
+{
+    LOG_UTILITY(wchar_to_cstr(msg));
+}
+// OutputDebugStringA --> GuestDbgPrint
+GUEST_FUNCTION_HOOK(sub_82170010, GuestDbgPrint);
+// OutputDebugStringW --> GuestDbgPrintW
+GUEST_FUNCTION_HOOK(sub_82CC7FF0, GuestDbgPrintW);
 
 
 // stubs
@@ -74,22 +95,8 @@ GUEST_FUNCTION_ALIAS_STUB(sub_82C87FF0, "_unk_init_wsa")
 // sub_82CFF790 is attempting to init xbl services
 GUEST_FUNCTION_ALIAS_STUB(sub_822EAAE0, "init_xbl")
 
-// dobious stubs
-/*
-    Probably safe to stub this one for now. I am not sure exactly what it's purpose is but let's find out later.
-
-    __imp___xstart
-        __imp__sub_82CC81E8 - _cinit(int initFPGR = 1)
-            __imp__sub_83246CC8 - `dynamic_initializer_for_'initlocks''(void)
-              __imp__sub_822EC3E0 - unknown
-                __imp__sub_8221BD38 - unknown
-                  __imp__sub_83238460 - unknown
-                    __imp__sub_83236D60 - unknown
-                      __imp__sub_83236B98 - the bad guy. 1 xref from sub_83238460
-                        __imp__sub_822D6C88 - Spin-lock using lwarx and stwcx to exchange an atomic variable. Works in every other observed case.
-                            -- Exception reading memory address 0x24 (translated == 0x100000024)
-*/
-//GUEST_FUNCTION_ALIAS_STUB(sub_8221BD38, "_unk_init_locks?");
+// XRNM is used for network stuff and is a pain in the ass
+GUEST_FUNCTION_ALIAS_STUB(sub_8258C398, "XrnmThreadStartup");
 
 void FixR11CaseIssue(PPCRegister& r11)
 {
