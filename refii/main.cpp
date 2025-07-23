@@ -52,52 +52,93 @@ void DoBootlegPatches()
     *(uint8_t*)refii::kernel::g_memory.Translate(0x83496afd) = 1;
 }
 
-uint32_t LdrLoadModule(const std::filesystem::path &path)
-{
-    auto loadResult = LoadFile(path);
-    if (loadResult.empty())
-    {
-        assert("Failed to load module" && false);
+struct Xex2OptRelocInfo {
+    uint32_t infoSize;
+    uint32_t numBlocks;
+};
+
+struct Xex2RelocBlock {
+    uint32_t pageRVA;
+    uint32_t numRelocations;
+};
+
+uint32_t LdrLoadModule(const std::filesystem::path& path) {
+    auto data = LoadFile(path);
+    if (data.empty()) {
+        assert(false && "Failed to load module");
         return 0;
     }
 
-    auto* header = reinterpret_cast<const Xex2Header*>(loadResult.data());
-    auto* security = reinterpret_cast<const Xex2SecurityInfo*>(loadResult.data() + header->securityOffset);
-    const auto* fileFormatInfo = reinterpret_cast<const Xex2OptFileFormatInfo*>(getOptHeaderPtr(loadResult.data(), XEX_HEADER_FILE_FORMAT_INFO));
-    auto entry = *reinterpret_cast<const uint32_t*>(getOptHeaderPtr(loadResult.data(), XEX_HEADER_ENTRY_POINT));
-    ByteSwapInplace(entry);
+    // 1) Read headers
+    const auto* hdr = reinterpret_cast<const Xex2Header*>(data.data());
+    uint32_t headerSize     = hdr->headerSize;
+    uint32_t securityOffset = hdr->securityOffset;
 
-    auto srcData = loadResult.data() + header->headerSize;
-    auto destData = reinterpret_cast<uint8_t*>(refii::kernel::g_memory.Translate(security->loadAddress));
+    // 2) Security info
+    const auto* sec = reinterpret_cast<const Xex2SecurityInfo*>(data.data() + securityOffset);
+    uint32_t loadAddress = sec->loadAddress;
+    uint32_t imageSize   = sec->imageSize;
 
-    if (fileFormatInfo->compressionType == XEX_COMPRESSION_NONE)
-    {
-        memcpy(destData, srcData, security->imageSize);
-    }
-    else if (fileFormatInfo->compressionType == XEX_COMPRESSION_BASIC)
-    {
-        auto* blocks = reinterpret_cast<const Xex2FileBasicCompressionBlock*>(fileFormatInfo + 1);
-        const size_t numBlocks = (fileFormatInfo->infoSize / sizeof(Xex2FileBasicCompressionInfo)) - 1;
+    // 3) Entry point (big-endian dword)
+    const auto* entryPtr = reinterpret_cast<const uint32_t*>(
+        getOptHeaderPtr(data.data(), XEX_HEADER_ENTRY_POINT));
+    uint32_t entry = read_be32(*entryPtr);
 
-        for (size_t i = 0; i < numBlocks; i++)
-        {
-            memcpy(destData, srcData, blocks[i].dataSize);
+    // 4) Compression info
+    const auto* fmt = reinterpret_cast<const Xex2OptFileFormatInfo*>(
+        getOptHeaderPtr(data.data(), XEX_HEADER_FILE_FORMAT_INFO));
+    uint32_t infoSize       = fmt->infoSize; // Usually already host-endian (unwrap be<> if not)
+    uint8_t  compressionType = fmt->compressionType;
 
-            srcData += blocks[i].dataSize;
-            destData += blocks[i].dataSize;
+    // 5) Allocate and zero-fill guest memory slab
+    uint8_t* dest = reinterpret_cast<uint8_t*>(g_memory.Translate(loadAddress));
+    memset(dest, 0, imageSize); // Ensure .bss is zeroed
+    const uint8_t* src = data.data() + headerSize;
 
-            memset(destData, 0, blocks[i].zeroSize);
-            destData += blocks[i].zeroSize;
+    // 6) Copy/decompress
+    if (compressionType == XEX_COMPRESSION_NONE) {
+        memcpy(dest, src, imageSize);
+    } else {
+        const auto* blocks = reinterpret_cast<const Xex2FileBasicCompressionBlock*>(fmt + 1);
+        size_t nBlocks = (infoSize / sizeof(Xex2FileBasicCompressionInfo)) - 1;
+        for (size_t i = 0; i < nBlocks; ++i) {
+            uint32_t dataSize = read_be32(blocks[i].dataSize);
+            uint32_t zeroSize = read_be32(blocks[i].zeroSize);
+
+            memcpy(dest, src, dataSize);
+            src  += dataSize;
+            dest += dataSize;
+
+            memset(dest, 0, zeroSize);
+            dest += zeroSize;
         }
     }
-    else
-    {
-        assert(false && "Unknown compression type.");
+
+    // 7) Apply relocations if present
+    if (const auto* rel = reinterpret_cast<const Xex2OptRelocInfo*>(
+            getOptHeaderPtr(data.data(), XEX_HEADER_RELOCATIONS))) {
+        uint32_t numRelBlocks = rel->numBlocks; // (be<> unwrap if needed)
+        const auto* rbl = reinterpret_cast<const Xex2RelocBlock*>(rel + 1);
+
+        // The flat u16 relocation list is immediately after RelocBlock[]
+        const auto* relocListPtr = reinterpret_cast<const uint16_t*>(rbl + numRelBlocks);
+
+        for (uint32_t b = 0; b < numRelBlocks; ++b) {
+            uint32_t pageRVA   = read_be32(rbl[b].pageRVA);
+            uint32_t numRelocs = read_be32(rbl[b].numRelocations);
+
+            const auto* entries = relocListPtr;
+            relocListPtr += numRelocs;
+
+            uint8_t* pageBase = reinterpret_cast<uint8_t*>(g_memory.Translate(loadAddress + pageRVA));
+            for (uint32_t i = 0; i < numRelocs; ++i) {
+                uint16_t off = read_be16(entries[i]);
+                auto* site   = reinterpret_cast<uint32_t*>(pageBase + (off & 0x0FFF));
+                uint32_t v = read_be32(*site);
+                *site = v + loadAddress;
+            }
+        }
     }
-
-    auto res = reinterpret_cast<const Xex2ResourceInfo*>(getOptHeaderPtr(loadResult.data(), XEX_HEADER_RESOURCE_INFO));
-
-    g_xdbfWrapper = XDBFWrapper((uint8_t*)refii::kernel::g_memory.Translate(res->offset.get()), res->sizeOfData);
 
     return entry;
 }
@@ -205,19 +246,31 @@ int main(int argc, char *argv[])
     bool graphicsApiRetry = false;
     const char *sdlVideoDriver = nullptr;
 
-    // bootleg paths
+#ifdef _WIN32
+    // Use old-style hardcoded paths on Windows
+    std::filesystem::path refiiBinPath = "P:\\x360\\refii-game\\bin";
+    std::filesystem::path modulePath = refiiBinPath / "default.xex";
+    std::string gameContentPath   = "P:/x360/refii-game/game";
+    std::string cacheContentPath  = "P:/x360/refii-game/cache";
+    std::string updateContentPath = "P:/x360/refii-game/update";
+#else
+    // On Linux, use the executable’s directory
     std::filesystem::path exePath = os::process::GetExecutablePath();
-    std::filesystem::path modulePath = exePath.parent_path() / "default.xex";
+    std::filesystem::path refiiBinPath = exePath.parent_path();
+    std::filesystem::path modulePath = refiiBinPath / "default.xex";
+    std::string gameContentPath   = (refiiBinPath / "game").string();
+    std::string cacheContentPath  = (refiiBinPath / "cache").string();
+    std::string updateContentPath = (refiiBinPath / "update").string();
+#endif
 
     if (!useDefaultWorkingDirectory)
     {
         // Set the current working directory to the executable's path.
         std::error_code ec;
-        std::filesystem::current_path(os::process::GetExecutablePath().parent_path(), ec);
+        std::filesystem::current_path(refiiBinPath, ec);
     }
 
     Config::Load();
-
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
     for (auto& dll : g_D3D12RequiredModules)
@@ -269,13 +322,15 @@ int main(int argc, char *argv[])
 
     refii::kernel::g_userHeap.Init();
 
-    const auto gameContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "Game");
-    const auto cacheContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "Cache");
+    // Always use lowercase for content names for cross-platform compatibility
+    const auto gameContent   = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "game");
+    const auto cacheContent  = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "cache");
     const auto updateContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "update");
 
-    refii::kernel::XamRegisterContent(gameContent, MapVirtualPath("P:/x360/refii-game/game").string());
-    refii::kernel::XamRegisterContent(cacheContent, MapVirtualPath("P:/x360/refii-game/cache").string());
-    refii::kernel::XamRegisterContent(updateContent, MapVirtualPath("P:/x360/refii-game/update").string());
+    // Register content with appropriate platform paths
+    refii::kernel::XamRegisterContent(gameContent, gameContentPath);
+    refii::kernel::XamRegisterContent(cacheContent, cacheContentPath);
+    refii::kernel::XamRegisterContent(updateContent, updateContentPath);
 
     // Mount game
     refii::kernel::XamContentCreateEx(0, "game", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
@@ -289,34 +344,35 @@ int main(int argc, char *argv[])
     // Mount update
     refii::kernel::XamContentCreateEx(0, "update", &updateContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
-
-    //XAudioInitializeSystem();
+    // Audio system: restore for both platforms (adjust if Linux needs something else)
+    XAudioInitializeSystem();
 
     uint32_t entry = LdrLoadModule(modulePath);
 
     //if (!runInstallerWizard)
     //{
-        //if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
-        //{
-        //    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
-        //    std::_Exit(1);
-        //}
+    //    if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
+    //    {
+    //        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
+    //        std::_Exit(1);
+    //    }
     //}
 
-   // Video::StartPipelinePrecompilation();
+    // Video::StartPipelinePrecompilation();
 
 #ifdef __linux__
     refii::kernel::InitializeGlobalCriticalSections();
     refii::kernel::InitializeCallbackArray();
     refii::kernel::InitializeCallbackRdata();
+    refii::kernel::InitializeCallbackList();
+    refii::kernel::InitializeImportThunkGlobals();
 #endif
 
     DoBootlegPatches();
     GuestThread::Start({ entry, 0, 0 });
 
-    
-
     return 0;
 }
+
 
 

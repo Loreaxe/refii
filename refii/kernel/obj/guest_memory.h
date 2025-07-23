@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef PPC_MEMORY_SIZE
+#define PPC_MEMORY_SIZE 0x100000000ULL // 4 GB
+#endif
+
 #ifndef _WIN32
 #define MEM_COMMIT  0x00001000  
 #define MEM_RESERVE 0x00002000  
@@ -22,7 +26,6 @@ namespace kernel {
         {
             if (offset)
                 assert(offset < PPC_MEMORY_SIZE);
-
             return base + offset;
         }
 
@@ -30,7 +33,6 @@ namespace kernel {
         {
             if (host)
                 assert(IsInMemoryRange(host));
-
             return static_cast<uint32_t>(static_cast<const uint8_t*>(host) - base);
         }
 
@@ -46,3 +48,4 @@ namespace kernel {
     };
 }
 }
+

@@ -224,3 +224,15 @@ inline void kDebugTrap()
     // fallback: do nothing
 #endif
 }
+
+#ifdef __linux__
+static inline uint32_t read_be32(uint32_t v) { return __builtin_bswap32(v); }
+static inline uint16_t read_be16(uint16_t v) { return __builtin_bswap16(v); }
+#else
+static inline uint32_t read_be32(uint32_t v) { return v; }
+static inline uint16_t read_be16(uint16_t v) { return v; }
+#endif
+
+#ifndef XEX_HEADER_RELOCATIONS
+#define XEX_HEADER_RELOCATIONS 0x00000500
+#endif

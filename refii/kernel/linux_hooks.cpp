@@ -55,10 +55,34 @@ void CallbackArrayInvoker() {
     }
 }
 
+static uint32_t HostImportThunk(PPCContext* ctx, uint8_t* /*base*/)
+{
+    // 1. Load pointer from [0x832EF3F0]
+    uint32_t base_addr = *reinterpret_cast<const be<uint32_t>*>(
+        refii::kernel::g_memory.Translate(0x832EF3F0));
+
+    // 2. Load pointer from [base_addr + 0xC8]
+    uint32_t table_addr = *reinterpret_cast<const be<uint32_t>*>(
+        refii::kernel::g_memory.Translate(base_addr + 0xC8));
+
+    // 3. Index calculation: (r3 & 0xFF) << 1
+    uint32_t index = (ctx->r3.u32 & 0xFF) << 1;
+
+    // 4. Load 16-bit value from table[index]
+    uint16_t entry = *reinterpret_cast<const be<uint16_t>*>(
+        refii::kernel::g_memory.Translate(table_addr + index));
+
+    // 5. Mask upper bits as in clrrwi r3, r11, 15
+    ctx->r3.u32 = entry & 0xFFFF8000;
+
+    return ctx->r3.u32;
+}
+
 } // namespace refii::kernel
 
 GUEST_FUNCTION_HOOK(sub_82CC7F18, refii::kernel::CallRegisteredCallbacks);
 GUEST_FUNCTION_HOOK(sub_82CC82C8, refii::kernel::CallbackArrayInvoker);
+//GUEST_FUNCTION_HOOK(sub_82CAD400, refii::kernel::HostImportThunk);
 
 #endif // __linux__
 
