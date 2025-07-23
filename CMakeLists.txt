@@ -5,11 +5,15 @@ if(NOT DEFINED ENV{VCPKG_ROOT})
 endif()
 
 # Force Clang as the compiler
-#set(CMAKE_C_COMPILER clang CACHE STRING "" FORCE)
-#set(CMAKE_CXX_COMPILER clang++ CACHE STRING "" FORCE)
+if (NOT WIN32)
+    set(CMAKE_C_COMPILER clang CACHE STRING "" FORCE)
+    set(CMAKE_CXX_COMPILER clang++ CACHE STRING "" FORCE)
 
-# Force Debug mode
-set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
+    # Force Debug mode
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
+
+endif()
+
 
 include($ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake)
 set(REFII_THIRDPARTY_ROOT ${CMAKE_SOURCE_DIR}/thirdparty)

@@ -3,9 +3,8 @@
 #include <cstdint>
 #include <cstring>
 
-#ifdef _WIN32
-    #include <Windows.h>
-#else
+
+#ifndef _WIN32
     #include <errno.h>  // For errno in GetLastError fallback
 
     // ==================== Simulated Win32 Structures ====================
@@ -126,37 +125,37 @@
         return errno;
     }
 
+    // ==================== Shared Constants (Cross-Platform) ====================
+
+    constexpr uint32_t INFINITE                         = 0xFFFFFFFF;
+    constexpr uint32_t S_OK                             = 0x00000000;
+    constexpr uint32_t STATUS_SUCCESS                   = 0x00000000;
+    constexpr uint32_t STATUS_TIMEOUT                   = 0x00000102;
+    constexpr uint32_t STATUS_WAIT_0                    = 0x00000000;
+    constexpr uint32_t STATUS_USER_APC                  = 0x000000C0;
+    constexpr uint32_t STATUS_FAIL_CHECK                = 0xC000022D;
+    constexpr uint32_t STATUS_ABANDONED_WAIT_0          = 0x00000080;
+    constexpr uint32_t STATUS_MUTANT_NOT_OWNED          = 0xC0000046;
+    constexpr uint32_t STATUS_PENDING                   = 0x00000103;
+    constexpr uint32_t STATUS_NOT_IMPLEMENTED           = 0xC0000002;
+    constexpr uint32_t STATUS_INVALID_PARAMETER         = 0xC000000D;
+    constexpr uint32_t STATUS_ACCESS_DENIED             = 0xC0000022;
+    constexpr uint32_t STATUS_OBJECT_NAME_NOT_FOUND     = 0xC0000034;
+    constexpr uint32_t STATUS_OBJECT_PATH_NOT_FOUND     = 0xC000003A;
+    constexpr uint32_t STATUS_NO_MEMORY                 = 0xC0000017;
+    constexpr uint32_t STATUS_BUFFER_TOO_SMALL          = 0xC0000023;
+    constexpr uint32_t STATUS_INVALID_HANDLE            = 0xC0000008;
+    constexpr uint32_t STATUS_OBJECT_TYPE_MISMATCH      = 0xC0000024;
+    constexpr uint32_t STATUS_THREAD_IS_TERMINATING     = 0xC000004B;
+    constexpr uint32_t STATUS_INVALID_PAGE_PROTECTION   = 0xC0000045;
+    constexpr uint32_t STATUS_ALREADY_COMMITTED         = 0xC0000021;
+    constexpr uint32_t STATUS_CONFLICTING_ADDRESSES     = 0xC0000018;
+    constexpr uint32_t STATUS_INVALID_SYSTEM_SERVICE    = 0xC000001C;
+    constexpr uint32_t STATUS_INVALID_INFO_CLASS        = 0xC0000003;
+    constexpr uint32_t STATUS_END_OF_FILE               = 0xC0000011;
+    constexpr uint32_t STATUS_NOT_SUPPORTED             = 0xC00000BB;
+
 #endif
-
-// ==================== Shared Constants (Cross-Platform) ====================
-
-constexpr uint32_t INFINITE                         = 0xFFFFFFFF;
-constexpr uint32_t S_OK                             = 0x00000000;
-constexpr uint32_t STATUS_SUCCESS                   = 0x00000000;
-constexpr uint32_t STATUS_TIMEOUT                   = 0x00000102;
-constexpr uint32_t STATUS_WAIT_0                    = 0x00000000;
-constexpr uint32_t STATUS_USER_APC                  = 0x000000C0;
-constexpr uint32_t STATUS_FAIL_CHECK                = 0xC000022D;
-constexpr uint32_t STATUS_ABANDONED_WAIT_0          = 0x00000080;
-constexpr uint32_t STATUS_MUTANT_NOT_OWNED          = 0xC0000046;
-constexpr uint32_t STATUS_PENDING                   = 0x00000103;
-constexpr uint32_t STATUS_NOT_IMPLEMENTED           = 0xC0000002;
-constexpr uint32_t STATUS_INVALID_PARAMETER         = 0xC000000D;
-constexpr uint32_t STATUS_ACCESS_DENIED             = 0xC0000022;
-constexpr uint32_t STATUS_OBJECT_NAME_NOT_FOUND     = 0xC0000034;
-constexpr uint32_t STATUS_OBJECT_PATH_NOT_FOUND     = 0xC000003A;
-constexpr uint32_t STATUS_NO_MEMORY                 = 0xC0000017;
-constexpr uint32_t STATUS_BUFFER_TOO_SMALL          = 0xC0000023;
-constexpr uint32_t STATUS_INVALID_HANDLE            = 0xC0000008;
-constexpr uint32_t STATUS_OBJECT_TYPE_MISMATCH      = 0xC0000024;
-constexpr uint32_t STATUS_THREAD_IS_TERMINATING     = 0xC000004B;
-constexpr uint32_t STATUS_INVALID_PAGE_PROTECTION   = 0xC0000045;
-constexpr uint32_t STATUS_ALREADY_COMMITTED         = 0xC0000021;
-constexpr uint32_t STATUS_CONFLICTING_ADDRESSES     = 0xC0000018;
-constexpr uint32_t STATUS_INVALID_SYSTEM_SERVICE    = 0xC000001C;
-constexpr uint32_t STATUS_INVALID_INFO_CLASS        = 0xC0000003;
-constexpr uint32_t STATUS_END_OF_FILE               = 0xC0000011;
-constexpr uint32_t STATUS_NOT_SUPPORTED             = 0xC00000BB;
 
 // ==================== Memory Protection Flags ====================
 

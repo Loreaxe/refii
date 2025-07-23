@@ -57,31 +57,39 @@ void CallbackArrayInvoker() {
 
 static uint32_t HostImportThunk(PPCContext* ctx, uint8_t* /*base*/)
 {
-    // 1. Load pointer from [0x832EF3F0]
+    // 1. Load guest pointer from guest .data
     uint32_t base_addr = *reinterpret_cast<const be<uint32_t>*>(
         refii::kernel::g_memory.Translate(0x832EF3F0));
+    printf("[HostImportThunk] base_addr (guest VA): %08X\n", base_addr);
 
-    // 2. Load pointer from [base_addr + 0xC8]
-    uint32_t table_addr = *reinterpret_cast<const be<uint32_t>*>(
-        refii::kernel::g_memory.Translate(base_addr + 0xC8));
+    // 2. Translate base_addr to host pointer and read next guest pointer from it
+    uint32_t table_base = *reinterpret_cast<const be<uint32_t>*>(
+        refii::kernel::g_memory.Translate((base_addr & 0xFFFFFFFF) + 0xC8));
+    printf("[HostImportThunk] table_base (guest VA): %08X\n", table_base);
 
-    // 3. Index calculation: (r3 & 0xFF) << 1
+    // 3. Calculate index as in PPC code
     uint32_t index = (ctx->r3.u32 & 0xFF) << 1;
 
-    // 4. Load 16-bit value from table[index]
+    // 4. Translate table_base, then add index, then read entry
     uint16_t entry = *reinterpret_cast<const be<uint16_t>*>(
-        refii::kernel::g_memory.Translate(table_addr + index));
+        refii::kernel::g_memory.Translate((table_base & 0xFFFFFFFF) + index));
+    printf("[HostImportThunk] entry: %04X\n", entry);
 
-    // 5. Mask upper bits as in clrrwi r3, r11, 15
+    // 5. Mask upper bits
     ctx->r3.u32 = entry & 0xFFFF8000;
 
     return ctx->r3.u32;
+}
+
+void MainGameLoop() {
+    printf("We made it!");
 }
 
 } // namespace refii::kernel
 
 GUEST_FUNCTION_HOOK(sub_82CC7F18, refii::kernel::CallRegisteredCallbacks);
 GUEST_FUNCTION_HOOK(sub_82CC82C8, refii::kernel::CallbackArrayInvoker);
+GUEST_FUNCTION_HOOK(sub_822F2868, refii::kernel::CallbackArrayInvoker);
 //GUEST_FUNCTION_HOOK(sub_82CAD400, refii::kernel::HostImportThunk);
 
 #endif // __linux__

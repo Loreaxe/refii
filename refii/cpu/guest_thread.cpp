@@ -55,8 +55,13 @@ GuestThreadHandle::GuestThreadHandle(const GuestThreadParams& params)
 
 GuestThreadHandle::~GuestThreadHandle()
 {
-    if (thread.joinable())
-        thread.join();
+    // Don't join from inside the thread; detach if so.
+    if (thread.joinable()) {
+        if (thread.get_id() != std::this_thread::get_id())
+            thread.join();
+        else
+            thread.detach();
+    }
 }
 
 uint32_t GuestThreadHandle::Wait(uint32_t timeout)

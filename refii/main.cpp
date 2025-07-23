@@ -62,83 +62,52 @@ struct Xex2RelocBlock {
     uint32_t numRelocations;
 };
 
-uint32_t LdrLoadModule(const std::filesystem::path& path) {
-    auto data = LoadFile(path);
-    if (data.empty()) {
-        assert(false && "Failed to load module");
+uint32_t LdrLoadModule(const std::filesystem::path &path)
+{
+    auto loadResult = LoadFile(path);
+    if (loadResult.empty())
+    {
+        assert("Failed to load module" && false);
         return 0;
     }
 
-    // 1) Read headers
-    const auto* hdr = reinterpret_cast<const Xex2Header*>(data.data());
-    uint32_t headerSize     = hdr->headerSize;
-    uint32_t securityOffset = hdr->securityOffset;
+    auto* header = reinterpret_cast<const Xex2Header*>(loadResult.data());
+    auto* security = reinterpret_cast<const Xex2SecurityInfo*>(loadResult.data() + header->securityOffset);
+    const auto* fileFormatInfo = reinterpret_cast<const Xex2OptFileFormatInfo*>(getOptHeaderPtr(loadResult.data(), XEX_HEADER_FILE_FORMAT_INFO));
+    auto entry = *reinterpret_cast<const uint32_t*>(getOptHeaderPtr(loadResult.data(), XEX_HEADER_ENTRY_POINT));
+    ByteSwapInplace(entry);
 
-    // 2) Security info
-    const auto* sec = reinterpret_cast<const Xex2SecurityInfo*>(data.data() + securityOffset);
-    uint32_t loadAddress = sec->loadAddress;
-    uint32_t imageSize   = sec->imageSize;
+    auto srcData = loadResult.data() + header->headerSize;
+    auto destData = reinterpret_cast<uint8_t*>(refii::kernel::g_memory.Translate(security->loadAddress));
 
-    // 3) Entry point (big-endian dword)
-    const auto* entryPtr = reinterpret_cast<const uint32_t*>(
-        getOptHeaderPtr(data.data(), XEX_HEADER_ENTRY_POINT));
-    uint32_t entry = read_be32(*entryPtr);
+    if (fileFormatInfo->compressionType == XEX_COMPRESSION_NONE)
+    {
+        memcpy(destData, srcData, security->imageSize);
+    }
+    else if (fileFormatInfo->compressionType == XEX_COMPRESSION_BASIC)
+    {
+        auto* blocks = reinterpret_cast<const Xex2FileBasicCompressionBlock*>(fileFormatInfo + 1);
+        const size_t numBlocks = (fileFormatInfo->infoSize / sizeof(Xex2FileBasicCompressionInfo)) - 1;
 
-    // 4) Compression info
-    const auto* fmt = reinterpret_cast<const Xex2OptFileFormatInfo*>(
-        getOptHeaderPtr(data.data(), XEX_HEADER_FILE_FORMAT_INFO));
-    uint32_t infoSize       = fmt->infoSize; // Usually already host-endian (unwrap be<> if not)
-    uint8_t  compressionType = fmt->compressionType;
+        for (size_t i = 0; i < numBlocks; i++)
+        {
+            memcpy(destData, srcData, blocks[i].dataSize);
 
-    // 5) Allocate and zero-fill guest memory slab
-    uint8_t* dest = reinterpret_cast<uint8_t*>(g_memory.Translate(loadAddress));
-    memset(dest, 0, imageSize); // Ensure .bss is zeroed
-    const uint8_t* src = data.data() + headerSize;
+            srcData += blocks[i].dataSize;
+            destData += blocks[i].dataSize;
 
-    // 6) Copy/decompress
-    if (compressionType == XEX_COMPRESSION_NONE) {
-        memcpy(dest, src, imageSize);
-    } else {
-        const auto* blocks = reinterpret_cast<const Xex2FileBasicCompressionBlock*>(fmt + 1);
-        size_t nBlocks = (infoSize / sizeof(Xex2FileBasicCompressionInfo)) - 1;
-        for (size_t i = 0; i < nBlocks; ++i) {
-            uint32_t dataSize = read_be32(blocks[i].dataSize);
-            uint32_t zeroSize = read_be32(blocks[i].zeroSize);
-
-            memcpy(dest, src, dataSize);
-            src  += dataSize;
-            dest += dataSize;
-
-            memset(dest, 0, zeroSize);
-            dest += zeroSize;
+            memset(destData, 0, blocks[i].zeroSize);
+            destData += blocks[i].zeroSize;
         }
     }
-
-    // 7) Apply relocations if present
-    if (const auto* rel = reinterpret_cast<const Xex2OptRelocInfo*>(
-            getOptHeaderPtr(data.data(), XEX_HEADER_RELOCATIONS))) {
-        uint32_t numRelBlocks = rel->numBlocks; // (be<> unwrap if needed)
-        const auto* rbl = reinterpret_cast<const Xex2RelocBlock*>(rel + 1);
-
-        // The flat u16 relocation list is immediately after RelocBlock[]
-        const auto* relocListPtr = reinterpret_cast<const uint16_t*>(rbl + numRelBlocks);
-
-        for (uint32_t b = 0; b < numRelBlocks; ++b) {
-            uint32_t pageRVA   = read_be32(rbl[b].pageRVA);
-            uint32_t numRelocs = read_be32(rbl[b].numRelocations);
-
-            const auto* entries = relocListPtr;
-            relocListPtr += numRelocs;
-
-            uint8_t* pageBase = reinterpret_cast<uint8_t*>(g_memory.Translate(loadAddress + pageRVA));
-            for (uint32_t i = 0; i < numRelocs; ++i) {
-                uint16_t off = read_be16(entries[i]);
-                auto* site   = reinterpret_cast<uint32_t*>(pageBase + (off & 0x0FFF));
-                uint32_t v = read_be32(*site);
-                *site = v + loadAddress;
-            }
-        }
+    else
+    {
+        assert(false && "Unknown compression type.");
     }
+
+    auto res = reinterpret_cast<const Xex2ResourceInfo*>(getOptHeaderPtr(loadResult.data(), XEX_HEADER_RESOURCE_INFO));
+
+    g_xdbfWrapper = XDBFWrapper((uint8_t*)refii::kernel::g_memory.Translate(res->offset.get()), res->sizeOfData);
 
     return entry;
 }
@@ -351,11 +320,11 @@ int main(int argc, char *argv[])
 
     //if (!runInstallerWizard)
     //{
-    //    if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
-    //    {
-    //        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
-    //        std::_Exit(1);
-    //    }
+        //if (!Video::CreateHostDevice(sdlVideoDriver, graphicsApiRetry))
+        //{
+            //SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), Localise("Video_BackendError").c_str(), GameWindow::s_pWindow);
+            //std::_Exit(1);
+        //}
     //}
 
     // Video::StartPipelinePrecompilation();
@@ -365,7 +334,7 @@ int main(int argc, char *argv[])
     refii::kernel::InitializeCallbackArray();
     refii::kernel::InitializeCallbackRdata();
     refii::kernel::InitializeCallbackList();
-    refii::kernel::InitializeImportThunkGlobals();
+    //refii::kernel::InitializeImportThunkGlobals();
 #endif
 
     DoBootlegPatches();

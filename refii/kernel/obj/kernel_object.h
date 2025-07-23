@@ -6,8 +6,10 @@
 namespace refii {
 namespace kernel {
 
+#ifndef _WIN32
 // You can move this to a central header if reused
 constexpr uint32_t STATUS_TIMEOUT = 0x00000102; // Common NT-style timeout value
+#endif
 
 struct KernelObject
 {

@@ -428,24 +428,35 @@ BIN2C(TARGET_OBJ refii SOURCE_FILE "${RESOURCES_SOURCE_PATH}/images/game_icon_ni
 
 
 function(compile_shader FILE_PATH TARGET_NAME)
-    set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/${FILE_PATH}.hlsl)
-    cmake_path(GET FILE_PATH STEM VARIABLE_NAME)
+    set(SHADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/gpu/shader/${FILE_PATH}.hlsl")
+    cmake_path(GET SHADER_PATH STEM VARIABLE_NAME)
 
-    if (UNLEASHED_RECOMP_D3D12)
-        add_custom_command(
-            OUTPUT ${FILE_PATH}.dxil.h
-            COMMAND env "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/../tools/XenosRecomp/thirdparty/dxc-bin/lib/x64" ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${FILE_PATH}.dxil.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_dxil
-            DEPENDS ${FILE_PATH}
+    # Set up environment for Linux (DXC dynamic libraries)
+    if (UNIX AND NOT APPLE)
+        set(DXC_ENV
+            env "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/../tools/XenosRecomp/thirdparty/dxc-bin/lib/x64"
         )
-        target_sources(refii PRIVATE ${FILE_PATH}.dxil.h)
+    else()
+        set(DXC_ENV)
     endif()
 
+    # D3D12 compile (DXIL)
+    if (UNLEASHED_RECOMP_D3D12)
+        add_custom_command(
+            OUTPUT ${SHADER_PATH}.dxil.h
+            COMMAND ${DXC_ENV} ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -Wno-ignored-attributes -Fh ${SHADER_PATH}.dxil.h ${SHADER_PATH} -Vn g_${VARIABLE_NAME}_dxil
+            DEPENDS ${SHADER_PATH}
+        )
+        target_sources(refii PRIVATE ${SHADER_PATH}.dxil.h)
+    endif()
+
+    # Vulkan compile (SPIR-V)
     add_custom_command(
-        OUTPUT ${FILE_PATH}.spirv.h
-        COMMAND env "LD_LIBRARY_PATH=${PROJECT_SOURCE_DIR}/../tools/XenosRecomp/thirdparty/dxc-bin/lib/x64" ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${FILE_PATH}.spirv.h ${FILE_PATH} -Vn g_${VARIABLE_NAME}_spirv
-        DEPENDS ${FILE_PATH}
+        OUTPUT ${SHADER_PATH}.spirv.h
+        COMMAND ${DXC_ENV} ${DIRECTX_DXC_TOOL} -T ${TARGET_NAME} -HV 2021 -all-resources-bound -spirv -fvk-use-dx-layout ${ARGN} -Fh ${SHADER_PATH}.spirv.h ${SHADER_PATH} -Vn g_${VARIABLE_NAME}_spirv
+        DEPENDS ${SHADER_PATH}
     )
-    target_sources(refii PRIVATE ${FILE_PATH}.spirv.h)
+    target_sources(refii PRIVATE ${SHADER_PATH}.spirv.h)
 endfunction()
 
 function(compile_vertex_shader FILE_PATH)
