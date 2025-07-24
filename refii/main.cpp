@@ -21,6 +21,7 @@
 #include <ui/game_window.h>
 #include <preload_executable.h>
 #include <kernel/linux_hooks.h>
+#include <iostream>
 
 #ifdef _WIN32
 #include <timeapi.h>
@@ -62,52 +63,83 @@ struct Xex2RelocBlock {
     uint32_t numRelocations;
 };
 
-uint32_t LdrLoadModule(const std::filesystem::path &path)
-{
-    auto loadResult = LoadFile(path);
-    if (loadResult.empty())
-    {
-        assert("Failed to load module" && false);
+uint32_t LdrLoadModule(const std::filesystem::path& path) {
+    auto data = LoadFile(path);
+    if (data.empty()) {
+        assert(false && "Failed to load module");
         return 0;
     }
 
-    auto* header = reinterpret_cast<const Xex2Header*>(loadResult.data());
-    auto* security = reinterpret_cast<const Xex2SecurityInfo*>(loadResult.data() + header->securityOffset);
-    const auto* fileFormatInfo = reinterpret_cast<const Xex2OptFileFormatInfo*>(getOptHeaderPtr(loadResult.data(), XEX_HEADER_FILE_FORMAT_INFO));
-    auto entry = *reinterpret_cast<const uint32_t*>(getOptHeaderPtr(loadResult.data(), XEX_HEADER_ENTRY_POINT));
-    ByteSwapInplace(entry);
+    // 1) Read headers
+    const auto* hdr = reinterpret_cast<const Xex2Header*>(data.data());
+    uint32_t headerSize     = hdr->headerSize;
+    uint32_t securityOffset = hdr->securityOffset;
 
-    auto srcData = loadResult.data() + header->headerSize;
-    auto destData = reinterpret_cast<uint8_t*>(refii::kernel::g_memory.Translate(security->loadAddress));
+    // 2) Security info
+    const auto* sec = reinterpret_cast<const Xex2SecurityInfo*>(data.data() + securityOffset);
+    uint32_t loadAddress = sec->loadAddress;
+    uint32_t imageSize   = sec->imageSize;
 
-    if (fileFormatInfo->compressionType == XEX_COMPRESSION_NONE)
-    {
-        memcpy(destData, srcData, security->imageSize);
-    }
-    else if (fileFormatInfo->compressionType == XEX_COMPRESSION_BASIC)
-    {
-        auto* blocks = reinterpret_cast<const Xex2FileBasicCompressionBlock*>(fileFormatInfo + 1);
-        const size_t numBlocks = (fileFormatInfo->infoSize / sizeof(Xex2FileBasicCompressionInfo)) - 1;
+    // 3) Entry point (big-endian dword)
+    const auto* entryPtr = reinterpret_cast<const uint32_t*>(
+        getOptHeaderPtr(data.data(), XEX_HEADER_ENTRY_POINT));
+    uint32_t entry = read_be32(*entryPtr);
 
-        for (size_t i = 0; i < numBlocks; i++)
-        {
-            memcpy(destData, srcData, blocks[i].dataSize);
+    // 4) Compression info
+    const auto* fmt = reinterpret_cast<const Xex2OptFileFormatInfo*>(
+        getOptHeaderPtr(data.data(), XEX_HEADER_FILE_FORMAT_INFO));
+    uint32_t infoSize       = fmt->infoSize; // Usually already host-endian (unwrap be<> if not)
+    uint8_t  compressionType = fmt->compressionType;
 
-            srcData += blocks[i].dataSize;
-            destData += blocks[i].dataSize;
+    // 5) Allocate and zero-fill guest memory slab
+    uint8_t* dest = reinterpret_cast<uint8_t*>(g_memory.Translate(loadAddress));
+    memset(dest, 0, imageSize); // Ensure .bss is zeroed
+    const uint8_t* src = data.data() + headerSize;
 
-            memset(destData, 0, blocks[i].zeroSize);
-            destData += blocks[i].zeroSize;
+    // 6) Copy/decompress
+    if (compressionType == XEX_COMPRESSION_NONE) {
+        memcpy(dest, src, imageSize);
+    } else {
+        const auto* blocks = reinterpret_cast<const Xex2FileBasicCompressionBlock*>(fmt + 1);
+        size_t nBlocks = (infoSize / sizeof(Xex2FileBasicCompressionInfo)) - 1;
+        for (size_t i = 0; i < nBlocks; ++i) {
+            uint32_t dataSize = read_be32(blocks[i].dataSize);
+            uint32_t zeroSize = read_be32(blocks[i].zeroSize);
+
+            memcpy(dest, src, dataSize);
+            src  += dataSize;
+            dest += dataSize;
+
+            memset(dest, 0, zeroSize);
+            dest += zeroSize;
         }
     }
-    else
-    {
-        assert(false && "Unknown compression type.");
+
+    // 7) Apply relocations if present
+    if (const auto* rel = reinterpret_cast<const Xex2OptRelocInfo*>(
+            getOptHeaderPtr(data.data(), XEX_HEADER_RELOCATIONS))) {
+        uint32_t numRelBlocks = rel->numBlocks; // (be<> unwrap if needed)
+        const auto* rbl = reinterpret_cast<const Xex2RelocBlock*>(rel + 1);
+
+        // The flat u16 relocation list is immediately after RelocBlock[]
+        const auto* relocListPtr = reinterpret_cast<const uint16_t*>(rbl + numRelBlocks);
+
+        for (uint32_t b = 0; b < numRelBlocks; ++b) {
+            uint32_t pageRVA   = read_be32(rbl[b].pageRVA);
+            uint32_t numRelocs = read_be32(rbl[b].numRelocations);
+
+            const auto* entries = relocListPtr;
+            relocListPtr += numRelocs;
+
+            uint8_t* pageBase = reinterpret_cast<uint8_t*>(g_memory.Translate(loadAddress + pageRVA));
+            for (uint32_t i = 0; i < numRelocs; ++i) {
+                uint16_t off = read_be16(entries[i]);
+                auto* site   = reinterpret_cast<uint32_t*>(pageBase + (off & 0x0FFF));
+                uint32_t v = read_be32(*site);
+                *site = v + loadAddress;
+            }
+        }
     }
-
-    auto res = reinterpret_cast<const Xex2ResourceInfo*>(getOptHeaderPtr(loadResult.data(), XEX_HEADER_RESOURCE_INFO));
-
-    g_xdbfWrapper = XDBFWrapper((uint8_t*)refii::kernel::g_memory.Translate(res->offset.get()), res->sizeOfData);
 
     return entry;
 }
@@ -139,58 +171,6 @@ void init()
 #endif
 }
 
-static std::filesystem::path GetProjectRoot()
-{
-    static const std::filesystem::path rootPath = []() -> std::filesystem::path {
-#if defined(__linux__)
-        char exePath[PATH_MAX] = {};
-        ssize_t len = ::readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
-        if (len > 0 && len < PATH_MAX) {
-            exePath[len] = '\0';
-            std::filesystem::path exeDir = std::filesystem::path(exePath).parent_path();
-
-            while (!exeDir.empty()) {
-                if (exeDir.filename() == "Git") {
-                    return exeDir;
-                }
-
-                std::filesystem::path parent = exeDir.parent_path();
-                if (parent == exeDir) // reached root
-                    break;
-                exeDir = std::move(parent);
-            }
-        }
-#endif
-        // fallback
-        return std::filesystem::current_path();
-    }();
-
-    return rootPath;
-}
-
-static std::filesystem::path MapVirtualPath(const std::filesystem::path& virtualPath)
-{
-#ifdef _WIN32
-    return virtualPath;
-#else
-    std::string pathStr = virtualPath.string();
-
-    // Handle Windows-style path prefixes
-    if (pathStr.starts_with("P:\\")) {
-        pathStr = pathStr.substr(3); // remove "P:\\"
-    } else if (pathStr.starts_with("P:/")) {
-        pathStr = pathStr.substr(3); // remove "P:/"
-    }
-
-    // Convert any remaining backslashes to forward slashes
-    std::replace(pathStr.begin(), pathStr.end(), '\\', '/');
-
-    // Use auto-detected root path
-    auto fullPath = GetProjectRoot() / pathStr;
-
-    return std::filesystem::weakly_canonical(fullPath); // normalize path
-#endif
-}
 
 int main(int argc, char *argv[])
 {
@@ -215,43 +195,35 @@ int main(int argc, char *argv[])
     bool graphicsApiRetry = false;
     const char *sdlVideoDriver = nullptr;
 
-#ifdef _WIN32
-    // Use old-style hardcoded paths on Windows
-    std::filesystem::path refiiBinPath = "P:\\x360\\refii-game\\bin";
-    std::filesystem::path modulePath = refiiBinPath / "default.xex";
-    std::string gameContentPath   = "P:/x360/refii-game/game";
-    std::string cacheContentPath  = "P:/x360/refii-game/cache";
-    std::string updateContentPath = "P:/x360/refii-game/update";
-#else
-    // On Linux, use the executable’s directory
-    std::filesystem::path exePath = os::process::GetExecutablePath();
-    std::filesystem::path refiiBinPath = exePath.parent_path();
-    std::filesystem::path modulePath = refiiBinPath / "default.xex";
-    std::string gameContentPath   = (refiiBinPath / "game").string();
-    std::string cacheContentPath  = (refiiBinPath / "cache").string();
-    std::string updateContentPath = (refiiBinPath / "update").string();
-#endif
+    // bootleg paths
+    std::filesystem::path binPath           = std::string(GAME_INSTALL_DIRECTORY) + "/bin";
+    
+    // Content paths (use host-native paths!)
+    std::filesystem::path modulePath        = std::string(GAME_INSTALL_DIRECTORY) + "/game/default.xex";
+    std::filesystem::path gameContentPath   = std::string(GAME_INSTALL_DIRECTORY) + "/game";
+    std::filesystem::path cacheContentPath  = std::string(GAME_INSTALL_DIRECTORY) + "/cache";
+    std::filesystem::path updateContentPath = std::string(GAME_INSTALL_DIRECTORY) + "/update";
 
-    if (!useDefaultWorkingDirectory)
-    {
-        // Set the current working directory to the executable's path.
-        std::error_code ec;
-        std::filesystem::current_path(refiiBinPath, ec);
-    }
+    // Print actual host paths for debugging
+    std::cout << "Host path for module: "        << modulePath        << std::endl;
+    std::cout << "Host path for game content: "  << gameContentPath   << std::endl;
+    std::cout << "Host path for cache content: " << cacheContentPath  << std::endl;
+    std::cout << "Host path for update content: "<< updateContentPath << std::endl;
 
     Config::Load();
 
 #if defined(_WIN32) && defined(UNLEASHED_RECOMP_D3D12)
-    for (auto& dll : g_D3D12RequiredModules)
+
+for (auto& dll : g_D3D12RequiredModules)
+{
+    if (!std::filesystem::exists(binPath / dll))
     {
-        if (!std::filesystem::exists(refiiBinPath / dll))
-        {
-            char text[512];
-            snprintf(text, sizeof(text), Localise("System_Win32_MissingDLLs").c_str(), dll.data());
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), text, GameWindow::s_pWindow);
-            std::_Exit(1);
-        }
+        char text[512];
+        snprintf(text, sizeof(text), Localise("System_Win32_MissingDLLs").c_str(), dll.data());
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, GameWindow::GetTitle(), text, GameWindow::s_pWindow);
+        std::_Exit(1);
     }
+}
 #endif
 
     os::process::ShowConsole();
@@ -296,21 +268,15 @@ int main(int argc, char *argv[])
     const auto cacheContent  = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "cache");
     const auto updateContent = refii::kernel::XamMakeContent(XCONTENTTYPE_RESERVED, "update");
 
-    // Register content with appropriate platform paths
-    refii::kernel::XamRegisterContent(gameContent, gameContentPath);
-    refii::kernel::XamRegisterContent(cacheContent, cacheContentPath);
-    refii::kernel::XamRegisterContent(updateContent, updateContentPath);
+    // Register content with native paths
+    refii::kernel::XamRegisterContent(gameContent, gameContentPath.string());
+    refii::kernel::XamRegisterContent(cacheContent, cacheContentPath.string());
+    refii::kernel::XamRegisterContent(updateContent, updateContentPath.string());
 
-    // Mount game
-    refii::kernel::XamContentCreateEx(0, "game", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
-
-    // OS mounts game data to D:
-    refii::kernel::XamContentCreateEx(0, "D", &gameContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
-
-    // Mount cache
-    refii::kernel::XamContentCreateEx(0, "cache", &cacheContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
-
-    // Mount update
+    // Mount game, cache, update, etc.
+    refii::kernel::XamContentCreateEx(0, "game",   &gameContent,   OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
+    refii::kernel::XamContentCreateEx(0, "D",      &gameContent,   OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
+    refii::kernel::XamContentCreateEx(0, "cache",  &cacheContent,  OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
     refii::kernel::XamContentCreateEx(0, "update", &updateContent, OPEN_EXISTING, nullptr, nullptr, 0, 0, nullptr);
 
     // Audio system: restore for both platforms (adjust if Linux needs something else)
@@ -342,6 +308,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
-
 

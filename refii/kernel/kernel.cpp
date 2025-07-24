@@ -2,9 +2,8 @@
 #include "kernel.h"
 #include <locale/locale.h>
 #include <user/config.h>
-#include "platform_defs.h"
-
 #include "io/file_system.h"
+#include "platform_defs.h"
 
 refii::kernel::Mutex refii::kernel::g_kernelLock;
 
@@ -115,27 +114,19 @@ void refii::kernel::KeQuerySystemTime(be<uint64_t>* time)
     *time = currentTime100ns;
 }
 
-uint32_t refii::kernel::KeWaitForMultipleObjects(
-    uint32_t Count,
-    xpointer<XDISPATCHER_HEADER>* Objects,
-    uint32_t WaitType,
-    uint32_t WaitReason,
-    uint32_t WaitMode,
-    uint32_t Alertable,
-    be<int64_t>* Timeout)
+uint32_t refii::kernel::KeWaitForMultipleObjects(uint32_t Count, xpointer<XDISPATCHER_HEADER>* Objects, uint32_t WaitType, uint32_t WaitReason, uint32_t WaitMode, uint32_t Alertable, be<int64_t>* Timeout)
 {
     const uint64_t timeout = GuestTimeoutToMilliseconds(Timeout);
 
-    auto deadline = (timeout == INFINITE)
-        ? std::chrono::steady_clock::time_point::max()
-        : std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
+    auto deadline = (timeout == INFINITE) ?
+        std::chrono::steady_clock::time_point::max() :
+        std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout);
 
     if (WaitType == 0) // Wait all
     {
         for (size_t i = 0; i < Count; i++)
         {
-            uint32_t remaining = INFINITE;  // <-- ✅ missing semicolon was here
-
+            uint32_t remaining = INFINITE;
             if (timeout != INFINITE)
             {
                 auto now = std::chrono::steady_clock::now();
@@ -158,6 +149,7 @@ uint32_t refii::kernel::KeWaitForMultipleObjects(
         for (size_t i = 0; i < Count; i++)
             s_events[i] = QueryKernelObject<Event>(*Objects[i]);
 
+        auto start = std::chrono::steady_clock::now();
         while (true)
         {
             uint32_t generation = g_keSetEventGeneration.load();
@@ -249,7 +241,7 @@ uint32_t refii::kernel::KeSetAffinityThread(uint32_t Thread, uint32_t Affinity, 
 
 void refii::kernel::KeBugCheckEx()
 {
-    kDebugTrap();
+    __builtin_debugtrap();
 }
 
 uint32_t refii::kernel::KeGetCurrentProcessType()
